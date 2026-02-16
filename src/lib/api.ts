@@ -11,8 +11,8 @@ export interface NewsItem {
 }
 
 export interface MockQuestion {
-  id: number;
   question: string;
   options: string[];
-  correct_answer: string;
+  correctAnswer: string;
+  detailedExplanation: string;
 }
