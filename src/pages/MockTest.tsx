@@ -56,7 +56,7 @@ export default function MockTest() {
   };
 
   const score = questions.reduce(
-    (acc, q, i) => acc + (answers[i] === q.correct_answer ? 1 : 0),
+    (acc, q, i) => acc + (answers[i] === q.correctAnswer ? 1 : 0),
     0
   );
 
@@ -136,7 +136,7 @@ export default function MockTest() {
 
         <div className="space-y-4">
           {questions.map((q, i) => {
-            const isCorrect = answers[i] === q.correct_answer;
+            const isCorrect = answers[i] === q.correctAnswer;
             return (
               <motion.div
                 key={i}
@@ -163,7 +163,10 @@ export default function MockTest() {
                   {answers[i] && !isCorrect && (
                     <p>Your answer: <span className="text-destructive">{answers[i]}</span></p>
                   )}
-                  <p>Correct: <span className="text-success">{q.correct_answer}</span></p>
+                  <p>Correct: <span className="text-success">{q.correctAnswer}</span></p>
+                  {q.detailedExplanation && (
+                    <p className="mt-1 text-muted-foreground">{q.detailedExplanation}</p>
+                  )}
                 </div>
               </motion.div>
             );
