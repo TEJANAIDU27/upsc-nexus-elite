@@ -63,6 +63,9 @@ export default {
         },
         success: "hsl(var(--success))",
         warning: "hsl(var(--warning))",
+        "gold-light": "hsl(var(--gold-light))",
+        "gold-dark": "hsl(var(--gold-dark))",
+        "navy-deep": "hsl(var(--navy-deep))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
