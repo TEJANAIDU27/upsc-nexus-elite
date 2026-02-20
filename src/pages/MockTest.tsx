@@ -14,14 +14,30 @@ export default function MockTest() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Normalize options: webhook may return { a: "...", b: "...", c: "...", d: "..." }
+  // or an array of strings — we convert both into a string[]
+  const normalizeOptions = (options: unknown): string[] => {
+    if (Array.isArray(options)) return options.map(String);
+    if (options && typeof options === "object") {
+      return Object.entries(options as Record<string, string>)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, val]) => `(${key}) ${val}`);
+    }
+    return [];
+  };
+
   const fetchQuestions = useCallback(() => {
     setLoading(true);
     setError(null);
     fetch(ENDPOINTS.MOCK_TEST)
       .then((res) => res.json())
       .then((data) => {
-        const q = Array.isArray(data) ? data : data.questions || [];
-        setQuestions(q.slice(0, 20));
+        const raw: MockQuestion[] = Array.isArray(data) ? data : data.questions || [];
+        const q = raw.slice(0, 20).map((item) => ({
+          ...item,
+          options: normalizeOptions(item.options),
+        }));
+        setQuestions(q);
         setStarted(true);
         setCurrentQ(0);
         setAnswers({});
