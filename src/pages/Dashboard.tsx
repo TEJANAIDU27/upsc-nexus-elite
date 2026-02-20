@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Newspaper, Tag, Clock, Play, TrendingUp, Users, Award } from "lucide-react";
+import { Newspaper, Tag, Clock, Play, TrendingUp, Users, Award, Sun, LayoutGrid } from "lucide-react";
 import { ShimmerHero, ShimmerCard } from "@/components/ShimmerLoaders";
+import { MorningDigest } from "@/components/MorningDigest";
+import { MainsPractice } from "@/components/MainsPractice";
 import { ENDPOINTS, type NewsItem } from "@/lib/api";
 import heroBg from "@/assets/hero-bg.jpg";
 
@@ -20,10 +22,26 @@ const stats = [
   { icon: TrendingUp, label: "Success Rate", value: "78%" },
 ];
 
+type Tab = "news" | "morning";
+
+// Parse GS tag to derive syllabus topic badge
+function parseSyllabusBadge(gsTag: string): string {
+  const tagMap: Record<string, string> = {
+    "GS1": "GS1: History & Geography",
+    "GS2": "GS2: Polity & Governance",
+    "GS3": "GS3: Economy & Environment",
+    "GS4": "GS4: Ethics & Integrity",
+  };
+  const key = Object.keys(tagMap).find((k) => gsTag?.toUpperCase().includes(k));
+  return key ? tagMap[key] : gsTag || "General Studies";
+}
+
 export default function Dashboard() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>("news");
+  const [expandedItem, setExpandedItem] = useState<number | null>(null);
 
   useEffect(() => {
     fetch(ENDPOINTS.DASHBOARD_NEWS)
@@ -77,54 +95,137 @@ export default function Dashboard() {
             </p>
           </motion.div>
 
-          {/* News Cards */}
-          {loading ? (
-            <div className="max-w-3xl mx-auto">
-              <ShimmerHero />
+          {/* Tab switcher */}
+          <div className="flex justify-center mb-8">
+            <div className="inline-flex rounded-xl bg-secondary/50 p-1 gap-1">
+              <button
+                onClick={() => setActiveTab("news")}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 ${
+                  activeTab === "news"
+                    ? "bg-primary text-primary-foreground shadow-[0_0_15px_hsl(var(--gold)/0.2)]"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+                Live News
+              </button>
+              <button
+                onClick={() => setActiveTab("morning")}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 ${
+                  activeTab === "morning"
+                    ? "bg-primary text-primary-foreground shadow-[0_0_15px_hsl(var(--gold)/0.2)]"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Sun className="w-4 h-4" />
+                Morning Digest
+              </button>
             </div>
-          ) : error ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="glass-card p-6 max-w-3xl mx-auto text-center"
-            >
-              <p className="text-muted-foreground">Unable to load news. Please try again later.</p>
-            </motion.div>
-          ) : (
-            <div className="max-w-4xl mx-auto space-y-4">
-              <AnimatePresence>
-                {news.map((item, index) => (
-                  <motion.article
-                    key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 + 0.3, duration: 0.4 }}
-                    className="glass-card-hover p-6 sm:p-8"
+          </div>
+
+          <AnimatePresence mode="wait">
+            {activeTab === "morning" ? (
+              <motion.div
+                key="morning"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="max-w-3xl mx-auto glass-card p-6 sm:p-8"
+              >
+                <div className="flex items-center gap-3 mb-5">
+                  <Sun className="w-5 h-5 text-primary" />
+                  <h2 className="font-serif text-xl font-bold gold-gradient-text">Morning Digest</h2>
+                </div>
+                <MorningDigest />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="news"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+              >
+                {/* News Cards */}
+                {loading ? (
+                  <div className="max-w-3xl mx-auto">
+                    <ShimmerHero />
+                  </div>
+                ) : error ? (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="glass-card p-6 max-w-3xl mx-auto text-center"
                   >
-                    <div className="flex flex-wrap items-center gap-3 mb-3">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-semibold uppercase tracking-wide">
-                        <Tag className="w-3 h-3" />
-                        {item.gs_tag || "General Studies"}
-                      </span>
-                      {item.date && (
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="w-3 h-3" />
-                          {item.date}
-                        </span>
-                      )}
-                    </div>
-                    <h2 className="font-serif text-xl sm:text-2xl font-bold text-foreground mb-3 flex items-start gap-3">
-                      <Newspaper className="w-5 h-5 text-primary mt-1 shrink-0" />
-                      {item.headline}
-                    </h2>
-                    <p className="text-muted-foreground leading-relaxed pl-8">
-                      {item.summary}
-                    </p>
-                  </motion.article>
-                ))}
-              </AnimatePresence>
-            </div>
-          )}
+                    <p className="text-muted-foreground">Unable to load news. Please try again later.</p>
+                  </motion.div>
+                ) : (
+                  <div className="max-w-4xl mx-auto space-y-4">
+                    {news.map((item, index) => (
+                      <motion.article
+                        key={index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 + 0.3, duration: 0.4 }}
+                        className="glass-card-hover overflow-hidden"
+                      >
+                        <div
+                          className="p-6 sm:p-8 cursor-pointer"
+                          onClick={() => setExpandedItem(expandedItem === index ? null : index)}
+                        >
+                          {/* Badges row */}
+                          <div className="flex flex-wrap items-center gap-2 mb-3">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-semibold uppercase tracking-wide">
+                              <Tag className="w-3 h-3" />
+                              {item.gs_tag || "General Studies"}
+                            </span>
+                            {/* Syllabus topic badge */}
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary text-foreground text-[10px] font-semibold tracking-wide border border-border">
+                              {parseSyllabusBadge(item.gs_tag)}
+                            </span>
+                            {item.date && (
+                              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Clock className="w-3 h-3" />
+                                {item.date}
+                              </span>
+                            )}
+                          </div>
+
+                          <h2 className="font-serif text-xl sm:text-2xl font-bold text-foreground mb-3 flex items-start gap-3">
+                            <Newspaper className="w-5 h-5 text-primary mt-1 shrink-0" />
+                            {item.headline}
+                          </h2>
+                          <p className="text-muted-foreground leading-relaxed pl-8">
+                            {item.summary}
+                          </p>
+
+                          <button className="mt-3 ml-8 text-xs text-primary hover:underline transition-colors">
+                            {expandedItem === index ? "Hide Mains Practice ↑" : "Open Mains Practice ↓"}
+                          </button>
+                        </div>
+
+                        {/* Mains Practice expandable */}
+                        <AnimatePresence>
+                          {expandedItem === index && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.35 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="px-6 sm:px-8 pb-6">
+                                <MainsPractice headline={item.headline} gsTag={item.gs_tag} />
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.article>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </section>
 
