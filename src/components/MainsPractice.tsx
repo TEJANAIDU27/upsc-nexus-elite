@@ -42,8 +42,7 @@ export function MainsPractice({ headline, gsTag }: MainsPracticeProps) {
         body: JSON.stringify({ headline, context, gsTag, answer }),
       });
 
-      console.log('results===>' + JSON.stringify(data, null, 2));
-
+      
       // If webhook returns evaluation data use it, otherwise show a demo response
       let data: EvaluationResult;
       try {
