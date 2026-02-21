@@ -106,8 +106,8 @@ export default function Dashboard() {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <LayoutGrid  />
-                Live News
+                <LayoutGrid className="w-4 h-4" />
+                Live News 
               </button>
               <button
                 onClick={() => setActiveTab("morning")}
