@@ -30,7 +30,7 @@ export function MainsPractice({ headline, gsTag }: MainsPracticeProps) {
     setLoading(true);
 
     try {
-      const res = await fetch("https://tejanaidu8.app.n8n.cloud/webhook/upsc_dashboard_news", {
+      const res = await fetch("https://tejanaidu8.app.n8n.cloud/webhook/evaluation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ headline, gsTag, answer }),
