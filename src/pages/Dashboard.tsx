@@ -106,7 +106,7 @@ export default function Dashboard() {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <LayoutGrid className="w-4 h-4" />
+                <LayoutGrid  />
                 Live News
               </button>
               <button
