@@ -36,7 +36,7 @@ export function MainsPractice({ headline, gsTag }: MainsPracticeProps) {
     };
 
     try {
-      const res = await fetch("https://tejanaidu8.app.n8n.cloud/webhook/evaluation", {
+      const res = await fetch("https://tejanaidu8.app.n8n.cloud/webhook/evaluate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ headline, context, gsTag, answer }),
