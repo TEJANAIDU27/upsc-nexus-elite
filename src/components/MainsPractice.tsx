@@ -28,12 +28,7 @@ export function MainsPractice({ headline, gsTag }: MainsPracticeProps) {
     }
     setError(null);
     setLoading(true);
- try {
-    const payload = {
-      ...data,
-      user_id: user?.id,
-      email: user?.email
-    };
+
 
     try {
       const res = await fetch("https://tejanaidu8.app.n8n.cloud/webhook/evaluate", {
