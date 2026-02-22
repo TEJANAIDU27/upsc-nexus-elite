@@ -8,7 +8,8 @@ interface EvaluationResult {
   verdict: srting;
   strengths: string[];
   areasToImprove: string[];
-  summary: string;
+ mentorComment: string;
+  modelPoints: string[];
 }
 
 interface MainsPracticeProps {
