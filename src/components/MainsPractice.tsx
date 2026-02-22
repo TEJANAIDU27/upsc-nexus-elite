@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface EvaluationResult {
   score: number;
+  verdict: srting;
   strengths: string[];
   areasToImprove: string[];
   summary: string;
