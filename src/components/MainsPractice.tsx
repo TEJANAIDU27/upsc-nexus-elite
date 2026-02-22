@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Star, TrendingUp, AlertCircle, Loader2, Send, Lightbulb } from "lucide-react";
+import { X, Star, TrendingUp, AlertCircle, Loader2, Send, Lightbulb, Award, BookOpen } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface EvaluationResult {
   score: number;
-  verdict: srting;
+  verdict: string;
   strengths: string[];
   areasToImprove: string[];
- mentorComment: string;
+  mentorComment: string;
   modelPoints: string[];
 }
 
@@ -66,6 +66,13 @@ function CircularGauge({ score, max = 10 }: { score: number; max?: number }) {
   );
 }
 
+function getVerdictStyle(verdict: string) {
+  const v = verdict?.toLowerCase() || "";
+  if (v.includes("excellent") || v.includes("good")) return "text-[hsl(var(--success))] bg-[hsl(var(--success)/0.1)] border-[hsl(var(--success)/0.3)]";
+  if (v.includes("average") || v.includes("incomplete")) return "text-[hsl(var(--warning))] bg-[hsl(var(--warning)/0.1)] border-[hsl(var(--warning)/0.3)]";
+  return "text-destructive bg-destructive/10 border-destructive/30";
+}
+
 export function MainsPractice({ headline, gsTag }: MainsPracticeProps) {
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
@@ -98,28 +105,42 @@ export function MainsPractice({ headline, gsTag }: MainsPracticeProps) {
       let data: EvaluationResult;
       try {
         data = await res.json();
-        if (!data.score) throw new Error("Invalid response");
+        if (!data.score && data.score !== 0) throw new Error("Invalid response");
+        // Normalize fields
+        data = {
+          score: data.score ?? 0,
+          verdict: data.verdict ?? "Pending",
+          strengths: Array.isArray(data.strengths) ? data.strengths : [],
+          areasToImprove: Array.isArray(data.areasToImprove) ? data.areasToImprove : [],
+          mentorComment: data.mentorComment ?? "",
+          modelPoints: Array.isArray(data.modelPoints) ? data.modelPoints : [],
+        };
       } catch {
         data = {
-          score: Math.floor(Math.random() * 3) + 7,
+          score: 5,
+          verdict: "Incomplete",
           strengths: [
             "Good use of relevant examples and current affairs linkage",
             "Clear structure with introduction, body, and conclusion",
-            "Multi-dimensional analysis covering social, economic aspects",
           ],
           areasToImprove: [
             "Include more specific data points and government schemes",
             "Strengthen the conclusion with a forward-looking perspective",
-            "Elaborate on the constitutional/legal framework",
           ],
-          summary:
-            "A well-structured answer demonstrating good understanding of the topic. Focus on incorporating more factual data and policy details to score in the 8-9 range.",
+          mentorComment:
+            "A decent attempt. Focus on incorporating more factual data and policy details to improve your score.",
+          modelPoints: [
+            "Define the core concept clearly",
+            "Provide constitutional/legal framework",
+            "Discuss multiple dimensions (social, economic, political)",
+            "Conclude with a balanced, forward-looking perspective",
+          ],
         };
       }
 
       setResult(data);
       setShowModal(true);
-    } catch (err) {
+    } catch {
       setError("Could not connect to evaluation service. Please try again.");
     } finally {
       setLoading(false);
@@ -204,73 +225,122 @@ export function MainsPractice({ headline, gsTag }: MainsPracticeProps) {
               {/* Circular Score Gauge */}
               <CircularGauge score={result.score} />
 
+              {/* Verdict Badge */}
+              {result.verdict && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.35 }}
+                  className="flex justify-center mt-4"
+                >
+                  <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold border ${getVerdictStyle(result.verdict)}`}>
+                    <Award className="w-4 h-4" />
+                    {result.verdict}
+                  </span>
+                </motion.div>
+              )}
+
               {/* Strengths Card */}
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="mt-6 rounded-xl border border-[hsl(var(--success)/0.25)] bg-[hsl(var(--success)/0.06)] p-4"
-              >
-                <div className="flex items-center gap-2 text-[hsl(var(--success))] text-sm font-semibold mb-3">
-                  <TrendingUp className="w-4 h-4" /> Strengths
-                </div>
-                <ul className="space-y-2">
-                  {result.strengths.map((s, i) => (
-                    <motion.li
-                      key={i}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.5 + i * 0.1 }}
-                      className="text-sm text-foreground flex items-start gap-2.5"
-                    >
-                      <span className="text-[hsl(var(--success))] mt-0.5 shrink-0">✓</span>
-                      {s}
-                    </motion.li>
-                  ))}
-                </ul>
-              </motion.div>
+              {result.strengths.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="mt-6 rounded-xl border border-[hsl(var(--success)/0.25)] bg-[hsl(var(--success)/0.06)] p-4"
+                >
+                  <div className="flex items-center gap-2 text-[hsl(var(--success))] text-sm font-semibold mb-3">
+                    <TrendingUp className="w-4 h-4" /> Strengths
+                  </div>
+                  <ul className="space-y-2">
+                    {result.strengths.map((s, i) => (
+                      <motion.li
+                        key={i}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.5 + i * 0.1 }}
+                        className="text-sm text-foreground flex items-start gap-2.5"
+                      >
+                        <span className="text-[hsl(var(--success))] mt-0.5 shrink-0">✓</span>
+                        {s}
+                      </motion.li>
+                    ))}
+                  </ul>
+                </motion.div>
+              )}
 
               {/* Areas to Improve Card */}
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                className="mt-4 rounded-xl border border-[hsl(var(--warning)/0.25)] bg-[hsl(var(--warning)/0.06)] p-4"
-              >
-                <div className="flex items-center gap-2 text-[hsl(var(--warning))] text-sm font-semibold mb-3">
-                  <AlertCircle className="w-4 h-4" /> Areas to Improve
-                </div>
-                <ul className="space-y-2">
-                  {result.areasToImprove.map((a, i) => (
-                    <motion.li
-                      key={i}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.7 + i * 0.1 }}
-                      className="text-sm text-foreground flex items-start gap-2.5"
-                    >
-                      <span className="text-[hsl(var(--warning))] mt-0.5 shrink-0">→</span>
-                      {a}
-                    </motion.li>
-                  ))}
-                </ul>
-              </motion.div>
+              {result.areasToImprove.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                  className="mt-4 rounded-xl border border-[hsl(var(--warning)/0.25)] bg-[hsl(var(--warning)/0.06)] p-4"
+                >
+                  <div className="flex items-center gap-2 text-[hsl(var(--warning))] text-sm font-semibold mb-3">
+                    <AlertCircle className="w-4 h-4" /> Areas to Improve
+                  </div>
+                  <ul className="space-y-2">
+                    {result.areasToImprove.map((a, i) => (
+                      <motion.li
+                        key={i}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.7 + i * 0.1 }}
+                        className="text-sm text-foreground flex items-start gap-2.5"
+                      >
+                        <span className="text-[hsl(var(--warning))] mt-0.5 shrink-0">→</span>
+                        {a}
+                      </motion.li>
+                    ))}
+                  </ul>
+                </motion.div>
+              )}
 
-              {/* Mentor's Insight */}
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8 }}
-                className="mt-5 rounded-xl bg-secondary/40 border border-border/50 p-5"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <Lightbulb className="w-4 h-4 text-primary" />
-                  <span className="text-xs uppercase tracking-widest text-primary font-semibold">Mentor's Insight</span>
-                </div>
-                <p className="text-sm text-muted-foreground leading-relaxed italic font-serif">
-                  "{result.summary}"
-                </p>
-              </motion.div>
+              {/* Model Answer Points */}
+              {result.modelPoints.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.75 }}
+                  className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-4"
+                >
+                  <div className="flex items-center gap-2 text-primary text-sm font-semibold mb-3">
+                    <BookOpen className="w-4 h-4" /> Model Answer Points
+                  </div>
+                  <ol className="space-y-2 list-none">
+                    {result.modelPoints.map((point, i) => (
+                      <motion.li
+                        key={i}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.85 + i * 0.08 }}
+                        className="text-sm text-foreground flex items-start gap-2.5"
+                      >
+                        <span className="text-primary font-semibold mt-0.5 shrink-0 text-xs">{i + 1}.</span>
+                        {point}
+                      </motion.li>
+                    ))}
+                  </ol>
+                </motion.div>
+              )}
+
+              {/* Mentor's Comment */}
+              {result.mentorComment && (
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.9 }}
+                  className="mt-5 rounded-xl bg-secondary/40 border border-border/50 p-5"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Lightbulb className="w-4 h-4 text-primary" />
+                    <span className="text-xs uppercase tracking-widest text-primary font-semibold">Mentor's Comment</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed italic font-serif">
+                    "{result.mentorComment}"
+                  </p>
+                </motion.div>
+              )}
 
               <button
                 onClick={() => { setShowModal(false); setAnswer(""); }}

@@ -5,6 +5,7 @@ import { ShimmerHero, ShimmerCard } from "@/components/ShimmerLoaders";
 import { MorningDigest } from "@/components/MorningDigest";
 import { MainsPractice } from "@/components/MainsPractice";
 import { ENDPOINTS, type NewsItem } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 import heroBg from "@/assets/hero-bg.jpg";
 
 const videoFeeds = [
@@ -37,6 +38,7 @@ function parseSyllabusBadge(gsTag: string): string {
 }
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,11 @@ export default function Dashboard() {
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch(ENDPOINTS.DASHBOARD_NEWS)
+    fetch(ENDPOINTS.DASHBOARD_NEWS, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: user?.email ?? null, user_id: user?.id ?? null }),
+    })
       .then((res) => res.json())
       .then((data) => {
         const items = Array.isArray(data) ? data : [data];
