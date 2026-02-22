@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { BookOpen, FileText, Archive, Menu, X, Flame, Trophy, Brain, LogOut, LogIn } from "lucide-react";
+import { BookOpen, FileText, Archive, Menu, X, Flame, Trophy, Brain, LogOut, LogIn, User } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -87,15 +88,27 @@ export default function Navbar() {
               </div>
             )}
 
-            {/* Auth button */}
+            {/* Account section */}
             {user ? (
-              <button
-                onClick={handleSignOut}
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-secondary/50"
-              >
-                <LogOut className="w-4 h-4" />
-                Sign Out
-              </button>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/60 border border-border">
+                  <Avatar className="w-7 h-7">
+                    <AvatarFallback className="bg-primary/15 text-primary text-xs font-semibold">
+                      {user.email?.charAt(0).toUpperCase() ?? "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs font-medium text-foreground max-w-[120px] truncate">
+                    {user.email}
+                  </span>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1.5 rounded-lg hover:bg-secondary/50"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Sign Out
+                </button>
+              </div>
             ) : (
               <Link
                 to="/auth"
@@ -158,13 +171,25 @@ export default function Navbar() {
             })}
 
             {user ? (
-              <button
-                onClick={() => { setMobileOpen(false); handleSignOut(); }}
-                className="w-full text-left px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                Sign Out
-              </button>
+              <div className="px-4 py-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Avatar className="w-7 h-7">
+                    <AvatarFallback className="bg-primary/15 text-primary text-xs font-semibold">
+                      {user.email?.charAt(0).toUpperCase() ?? "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs font-medium text-foreground truncate">
+                    {user.email}
+                  </span>
+                </div>
+                <button
+                  onClick={() => { setMobileOpen(false); handleSignOut(); }}
+                  className="w-full text-left px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
+              </div>
             ) : (
               <Link
                 to="/auth"

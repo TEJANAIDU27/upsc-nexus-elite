@@ -34,7 +34,13 @@ export default function MockTest() {
     fetch(ENDPOINTS.MOCK_TEST, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: user?.email ?? null, user_id: user?.id ?? null }),
+      body: JSON.stringify({
+        email: user?.email ?? null,
+        user_id: user?.id ?? null,
+        gs_tag: null,
+        answer: null,
+        headline: null,
+      }),
     })
       .then((res) => res.json())
       .then((data) => {
