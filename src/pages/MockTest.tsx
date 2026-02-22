@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Clock, ChevronRight, CheckCircle2, XCircle, RotateCcw } from "lucide-react";
 import { ShimmerQuestion } from "@/components/ShimmerLoaders";
 import { ENDPOINTS, type MockQuestion } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function MockTest() {
+  const { user } = useAuth();
   const [questions, setQuestions] = useState<MockQuestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [started, setStarted] = useState(false);
@@ -29,7 +31,11 @@ export default function MockTest() {
   const fetchQuestions = useCallback(() => {
     setLoading(true);
     setError(null);
-    fetch(ENDPOINTS.MOCK_TEST)
+    fetch(ENDPOINTS.MOCK_TEST, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: user?.email ?? null, user_id: user?.id ?? null }),
+    })
       .then((res) => res.json())
       .then((data) => {
         const raw: MockQuestion[] = Array.isArray(data) ? data : data.questions || [];
