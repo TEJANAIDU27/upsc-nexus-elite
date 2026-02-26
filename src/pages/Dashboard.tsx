@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Newspaper, Tag, Clock, Play, TrendingUp, Users, Award, Sun, LayoutGrid } from "lucide-react";
+import { Newspaper, Tag, Clock, Play, TrendingUp, Users, Award, Sun, LayoutGrid, Bookmark, Loader2 } from "lucide-react";
 import { ShimmerHero, ShimmerCard } from "@/components/ShimmerLoaders";
 import { MorningDigest } from "@/components/MorningDigest";
 import { MainsPractice } from "@/components/MainsPractice";
 import { ENDPOINTS, type NewsItem } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 import heroBg from "@/assets/hero-bg.jpg";
 
 const videoFeeds = [
@@ -25,7 +27,6 @@ const stats = [
 
 type Tab = "news" | "morning";
 
-// Parse GS tag to derive syllabus topic badge
 function parseSyllabusBadge(gsTag: string): string {
   const tagMap: Record<string, string> = {
     "GS1": "GS1: History & Geography",
@@ -44,6 +45,20 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("news");
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
+  const [savedHeadlines, setSavedHeadlines] = useState<Set<string>>(new Set());
+  const [savingIndex, setSavingIndex] = useState<number | null>(null);
+
+  // Fetch saved news headlines for current user
+  useEffect(() => {
+    if (!user) return;
+    (supabase
+      .from("saved_news") as any)
+      .select("headline")
+      .eq("user_id", user.id)
+      .then(({ data }) => {
+        if (data) setSavedHeadlines(new Set(data.map((d: any) => d.headline)));
+      });
+  }, [user]);
 
   useEffect(() => {
     fetch(ENDPOINTS.DASHBOARD_NEWS, {
@@ -59,6 +74,47 @@ export default function Dashboard() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleSaveNews = async (item: NewsItem, index: number) => {
+    if (!user) {
+      toast.error("Please sign in to save news");
+      return;
+    }
+    setSavingIndex(index);
+    const isSaved = savedHeadlines.has(item.headline);
+
+    try {
+      if (isSaved) {
+        const { error } = await (supabase
+          .from("saved_news") as any)
+          .delete()
+          .eq("user_id", user.id)
+          .eq("headline", item.headline);
+        if (error) throw error;
+        setSavedHeadlines((prev) => {
+          const next = new Set(prev);
+          next.delete(item.headline);
+          return next;
+        });
+        toast.success("Removed from Archive");
+      } else {
+        const { error } = await (supabase.from("saved_news") as any).insert({
+          user_id: user.id,
+          headline: item.headline,
+          summary: item.summary || null,
+          gs_tag: item.gs_tag || null,
+          date: item.date || null,
+        });
+        if (error) throw error;
+        setSavedHeadlines((prev) => new Set(prev).add(item.headline));
+        toast.success("News saved to Archive");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save");
+    } finally {
+      setSavingIndex(null);
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -113,7 +169,7 @@ export default function Dashboard() {
                 }`}
               >
                 <LayoutGrid className="w-4 h-4" />
-                Live News 
+                Live News
               </button>
               <button
                 onClick={() => setActiveTab("morning")}
@@ -151,7 +207,6 @@ export default function Dashboard() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
               >
-                {/* News Cards */}
                 {loading ? (
                   <div className="max-w-3xl mx-auto">
                     <ShimmerHero />
@@ -166,67 +221,93 @@ export default function Dashboard() {
                   </motion.div>
                 ) : (
                   <div className="max-w-4xl mx-auto space-y-4">
-                    {news.map((item, index) => (
-                      <motion.article
-                        key={index}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 + 0.3, duration: 0.4 }}
-                        className="glass-card-hover overflow-hidden"
-                      >
-                        <div
-                          className="p-6 sm:p-8 cursor-pointer"
-                          onClick={() => setExpandedItem(expandedItem === index ? null : index)}
+                    {news.map((item, index) => {
+                      const isSaved = savedHeadlines.has(item.headline);
+                      return (
+                        <motion.article
+                          key={index}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 + 0.3, duration: 0.4 }}
+                          className="glass-card-hover overflow-hidden"
                         >
-                          {/* Badges row */}
-                          <div className="flex flex-wrap items-center gap-2 mb-3">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-semibold uppercase tracking-wide">
-                              <Tag className="w-3 h-3" />
-                              {item.gs_tag || "General Studies"}
-                            </span>
-                            {/* Syllabus topic badge */}
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary text-foreground text-[10px] font-semibold tracking-wide border border-border">
-                              {parseSyllabusBadge(item.gs_tag)}
-                            </span>
-                            {item.date && (
-                              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Clock className="w-3 h-3" />
-                                {item.date}
-                              </span>
-                            )}
+                          <div className="p-6 sm:p-8">
+                            {/* Header row with badges + bookmark */}
+                            <div className="flex items-start justify-between gap-3 mb-3">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-semibold uppercase tracking-wide">
+                                  <Tag className="w-3 h-3" />
+                                  {item.gs_tag || "General Studies"}
+                                </span>
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary text-foreground text-[10px] font-semibold tracking-wide border border-border">
+                                  {parseSyllabusBadge(item.gs_tag)}
+                                </span>
+                                {item.date && (
+                                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    <Clock className="w-3 h-3" />
+                                    {item.date}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Bookmark button */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSaveNews(item, index);
+                                }}
+                                disabled={savingIndex === index}
+                                className={`shrink-0 p-2 rounded-lg transition-all duration-200 ${
+                                  isSaved
+                                    ? "text-primary bg-primary/15 hover:bg-primary/25"
+                                    : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                }`}
+                                title={isSaved ? "Remove from Archive" : "Save to Archive"}
+                              >
+                                {savingIndex === index ? (
+                                  <Loader2 className="w-5 h-5 animate-spin" />
+                                ) : (
+                                  <Bookmark className={`w-5 h-5 ${isSaved ? "fill-primary" : ""}`} />
+                                )}
+                              </button>
+                            </div>
+
+                            <div
+                              className="cursor-pointer"
+                              onClick={() => setExpandedItem(expandedItem === index ? null : index)}
+                            >
+                              <h2 className="font-serif text-xl sm:text-2xl font-bold text-foreground mb-3 flex items-start gap-3">
+                                <Newspaper className="w-5 h-5 text-primary mt-1 shrink-0" />
+                                {item.headline}
+                              </h2>
+                              <p className="text-muted-foreground leading-relaxed pl-8">
+                                {item.summary}
+                              </p>
+
+                              <button className="mt-3 ml-8 text-xs text-primary hover:underline transition-colors">
+                                {expandedItem === index ? "Hide Mains Practice ↑" : "Open Mains Practice ↓"}
+                              </button>
+                            </div>
                           </div>
 
-                          <h2 className="font-serif text-xl sm:text-2xl font-bold text-foreground mb-3 flex items-start gap-3">
-                            <Newspaper className="w-5 h-5 text-primary mt-1 shrink-0" />
-                            {item.headline}
-                          </h2>
-                          <p className="text-muted-foreground leading-relaxed pl-8">
-                            {item.summary}
-                          </p>
-
-                          <button className="mt-3 ml-8 text-xs text-primary hover:underline transition-colors">
-                            {expandedItem === index ? "Hide Mains Practice ↑" : "Open Mains Practice ↓"}
-                          </button>
-                        </div>
-
-                        {/* Mains Practice expandable */}
-                        <AnimatePresence>
-                          {expandedItem === index && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.35 }}
-                              className="overflow-hidden"
-                            >
-                              <div className="px-6 sm:px-8 pb-6">
-                                <MainsPractice headline={item.headline} gsTag={item.gs_tag} />
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </motion.article>
-                    ))}
+                          <AnimatePresence>
+                            {expandedItem === index && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.35 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="px-6 sm:px-8 pb-6">
+                                  <MainsPractice headline={item.headline} gsTag={item.gs_tag} />
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </motion.article>
+                      );
+                    })}
                   </div>
                 )}
               </motion.div>
