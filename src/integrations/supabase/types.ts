@@ -14,7 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      mock_test_history: {
+        Row: {
+          created_at: string
+          id: string
+          score: number
+          test_metadata: Json | null
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          score?: number
+          test_metadata?: Json | null
+          total_questions?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          score?: number
+          test_metadata?: Json | null
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      saved_news: {
+        Row: {
+          created_at: string
+          date: string | null
+          gs_tag: string | null
+          headline: string
+          id: string
+          summary: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string | null
+          gs_tag?: string | null
+          headline: string
+          id?: string
+          summary?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string | null
+          gs_tag?: string | null
+          headline?: string
+          id?: string
+          summary?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

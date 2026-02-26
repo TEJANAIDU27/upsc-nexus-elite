@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Clock, ChevronRight, CheckCircle2, XCircle, RotateCcw } from "lucide-react";
 import { ShimmerQuestion } from "@/components/ShimmerLoaders";
 import { ENDPOINTS, type MockQuestion } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 export default function MockTest() {
   const { user } = useAuth();
@@ -15,6 +17,7 @@ export default function MockTest() {
   const [timeLeft, setTimeLeft] = useState(20 * 60);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const savedRef = useRef(false);
 
   // Normalize options: webhook may return { a: "...", b: "...", c: "...", d: "..." }
   // or an array of strings — we convert both into a string[]
@@ -31,6 +34,7 @@ export default function MockTest() {
   const fetchQuestions = useCallback(() => {
     setLoading(true);
     setError(null);
+    savedRef.current = false;
     fetch(ENDPOINTS.MOCK_TEST, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -58,7 +62,7 @@ export default function MockTest() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [user]);
 
   // Timer
   useEffect(() => {
@@ -74,6 +78,31 @@ export default function MockTest() {
     }, 1000);
     return () => clearInterval(interval);
   }, [started, submitted, timeLeft]);
+
+  // Save results to database on submission
+  useEffect(() => {
+    if (!submitted || !user || savedRef.current || questions.length === 0) return;
+    savedRef.current = true;
+    const finalScore = questions.reduce(
+      (acc, q, i) => acc + (answers[i] === q.correctAnswer ? 1 : 0),
+      0
+    );
+    (supabase
+      .from("mock_test_history") as any)
+      .insert({
+        user_id: user.id,
+        score: finalScore,
+        total_questions: questions.length,
+        test_metadata: { questions, answers },
+      })
+      .then(({ error }) => {
+        if (error) {
+          console.error("Failed to save test:", error);
+        } else {
+          toast.success("Test results saved to your Archive");
+        }
+      });
+  }, [submitted, user, questions, answers]);
 
   const formatTime = (s: number) =>
     `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
@@ -108,11 +137,7 @@ export default function MockTest() {
           <p className="text-muted-foreground text-lg mb-8">
             20 questions • 20 minutes • UPSC Prelims pattern
           </p>
-
-          {error && (
-            <p className="text-destructive text-sm mb-4">{error}</p>
-          )}
-
+          {error && <p className="text-destructive text-sm mb-4">{error}</p>}
           <button onClick={fetchQuestions} className="gold-glow-button text-lg">
             Generate a Mock Test
           </button>
@@ -223,8 +248,6 @@ export default function MockTest() {
               </span>
             </div>
           </div>
-
-          {/* Progress bar */}
           <div className="w-full h-1.5 bg-secondary rounded-full mb-4 overflow-hidden">
             <motion.div
               className="h-full bg-primary rounded-full"
@@ -233,7 +256,6 @@ export default function MockTest() {
               transition={{ duration: 0.3 }}
             />
           </div>
-
           <div className="grid grid-cols-5 gap-2">
             {questions.map((_, i) => (
               <button
@@ -251,7 +273,6 @@ export default function MockTest() {
               </button>
             ))}
           </div>
-
           <p className="text-xs text-muted-foreground mt-4 text-center">
             {Object.keys(answers).length} of {questions.length} answered
           </p>
@@ -274,11 +295,9 @@ export default function MockTest() {
                 Question {currentQ + 1}/{questions.length}
               </span>
             </div>
-
             <h2 className="text-lg sm:text-xl font-medium text-foreground mb-8 leading-relaxed">
               {currentQuestion.question}
             </h2>
-
             <div className="space-y-3">
               {currentQuestion.options?.map((option, oi) => {
                 const isSelected = answers[currentQ] === option;
@@ -306,8 +325,6 @@ export default function MockTest() {
                 );
               })}
             </div>
-
-            {/* Navigation */}
             <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
               <button
                 onClick={() => setCurrentQ(Math.max(0, currentQ - 1))}
@@ -316,7 +333,6 @@ export default function MockTest() {
               >
                 ← Previous
               </button>
-
               {currentQ < questions.length - 1 ? (
                 <button
                   onClick={() => setCurrentQ(currentQ + 1)}
