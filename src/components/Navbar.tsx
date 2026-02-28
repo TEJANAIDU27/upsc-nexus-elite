@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { BookOpen, FileText, Archive, Menu, X, Flame, Trophy, Brain, LogOut, LogIn, User } from "lucide-react";
+import { BookOpen, FileText, Archive, Menu, X, Flame, Trophy, Brain, LogOut, LogIn, User, MessageSquare } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const navItems = [
   { label: "Dashboard", path: "/dashboard", icon: BookOpen },
   { label: "Mock Test", path: "/mock-test", icon: FileText },
+  { label: "Interview", path: "/interview", icon: MessageSquare },
   { label: "Archive", path: "/archive", icon: Archive },
   { label: "Revision", path: "/revision", icon: Brain },
 ];

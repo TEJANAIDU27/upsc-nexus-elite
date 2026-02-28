@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Newspaper, Tag, Clock, Play, TrendingUp, Users, Award, Sun, LayoutGrid, Bookmark, Loader2 } from "lucide-react";
-import { ShimmerHero, ShimmerCard } from "@/components/ShimmerLoaders";
+import { Newspaper, Tag, Clock, Play, TrendingUp, Users, Award, Sun, LayoutGrid, Bookmark, Loader2, RefreshCw } from "lucide-react";
+import { ShimmerHero } from "@/components/ShimmerLoaders";
 import { MorningDigest } from "@/components/MorningDigest";
 import { MainsPractice } from "@/components/MainsPractice";
-import { ENDPOINTS, type NewsItem } from "@/lib/api";
+import { useNews } from "@/contexts/NewsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import heroBg from "@/assets/hero-bg.jpg";
+import type { NewsItem } from "@/lib/api";
 
 const videoFeeds = [
   { title: "Indian Polity - Laxmikanth Summary", channel: "UPSC Nexus", duration: "45:20", views: "12K" },
@@ -40,40 +41,35 @@ function parseSyllabusBadge(gsTag: string): string {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [news, setNews] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { news, loading, error, fetchNews } = useNews();
   const [activeTab, setActiveTab] = useState<Tab>("news");
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
   const [savedHeadlines, setSavedHeadlines] = useState<Set<string>>(new Set());
   const [savingIndex, setSavingIndex] = useState<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Fetch news on mount (from context/cache)
+  useEffect(() => {
+    fetchNews();
+  }, [fetchNews]);
 
   // Fetch saved news headlines for current user
   useEffect(() => {
     if (!user) return;
-    (supabase
-      .from("saved_news") as any)
+    (supabase.from("saved_news") as any)
       .select("headline")
       .eq("user_id", user.id)
-      .then(({ data }) => {
+      .then(({ data }: any) => {
         if (data) setSavedHeadlines(new Set(data.map((d: any) => d.headline)));
       });
   }, [user]);
 
-  useEffect(() => {
-    fetch(ENDPOINTS.DASHBOARD_NEWS, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: user?.email ?? null, user_id: user?.id ?? null }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        const items = Array.isArray(data) ? data : [data];
-        setNews(items);
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchNews(true);
+    setRefreshing(false);
+    toast.success("News refreshed!");
+  };
 
   const handleSaveNews = async (item: NewsItem, index: number) => {
     if (!user) {
@@ -85,8 +81,7 @@ export default function Dashboard() {
 
     try {
       if (isSaved) {
-        const { error } = await (supabase
-          .from("saved_news") as any)
+        const { error } = await (supabase.from("saved_news") as any)
           .delete()
           .eq("user_id", user.id)
           .eq("headline", item.headline);
@@ -149,9 +144,19 @@ export default function Dashboard() {
             transition={{ delay: 0.15, duration: 0.5 }}
             className="text-center mb-10"
           >
-            <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold mb-4">
-              <span className="gold-gradient-text">Live UPSC Updates</span>
-            </h1>
+            <div className="flex items-center justify-center gap-3">
+              <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold mb-4">
+                <span className="gold-gradient-text">Live UPSC Updates</span>
+              </h1>
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing || loading}
+                className="shrink-0 p-2.5 rounded-xl bg-secondary/60 border border-border text-muted-foreground hover:text-primary hover:border-primary/30 transition-all disabled:opacity-40 mb-4"
+                title="Refresh News"
+              >
+                <RefreshCw className={`w-5 h-5 ${refreshing ? "animate-spin" : ""}`} />
+              </button>
+            </div>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               Real-time curated news, editorials, and analysis for your IAS preparation.
             </p>
@@ -232,7 +237,6 @@ export default function Dashboard() {
                           className="glass-card-hover overflow-hidden"
                         >
                           <div className="p-6 sm:p-8">
-                            {/* Header row with badges + bookmark */}
                             <div className="flex items-start justify-between gap-3 mb-3">
                               <div className="flex flex-wrap items-center gap-2">
                                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-semibold uppercase tracking-wide">
@@ -249,8 +253,6 @@ export default function Dashboard() {
                                   </span>
                                 )}
                               </div>
-
-                              {/* Bookmark button */}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -271,7 +273,6 @@ export default function Dashboard() {
                                 )}
                               </button>
                             </div>
-
                             <div
                               className="cursor-pointer"
                               onClick={() => setExpandedItem(expandedItem === index ? null : index)}
@@ -283,13 +284,11 @@ export default function Dashboard() {
                               <p className="text-muted-foreground leading-relaxed pl-8">
                                 {item.summary}
                               </p>
-
                               <button className="mt-3 ml-8 text-xs text-primary hover:underline transition-colors">
                                 {expandedItem === index ? "Hide Mains Practice ↑" : "Open Mains Practice ↓"}
                               </button>
                             </div>
                           </div>
-
                           <AnimatePresence>
                             {expandedItem === index && (
                               <motion.div

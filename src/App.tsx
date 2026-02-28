@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { NewsProvider } from "@/contexts/NewsContext";
 import Navbar from "@/components/Navbar";
 import LandingPage from "@/pages/LandingPage";
 import AuthPage from "@/pages/AuthPage";
@@ -11,11 +12,11 @@ import Dashboard from "@/pages/Dashboard";
 import MockTest from "@/pages/MockTest";
 import Archive from "@/pages/Archive";
 import RevisionDashboard from "@/pages/RevisionDashboard";
+import InterviewHub from "@/pages/InterviewHub";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Show landing for unauthenticated, dashboard for authenticated
 function RootRoute() {
   const { user, loading } = useAuth();
   if (loading) return null;
@@ -29,18 +30,21 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <div className="min-h-screen bg-background">
-            <Navbar />
-            <Routes>
-              <Route path="/" element={<RootRoute />} />
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/mock-test" element={<MockTest />} />
-              <Route path="/archive" element={<Archive />} />
-              <Route path="/revision" element={<RevisionDashboard />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </div>
+          <NewsProvider>
+            <div className="min-h-screen bg-background">
+              <Navbar />
+              <Routes>
+                <Route path="/" element={<RootRoute />} />
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/mock-test" element={<MockTest />} />
+                <Route path="/archive" element={<Archive />} />
+                <Route path="/revision" element={<RevisionDashboard />} />
+                <Route path="/interview" element={<InterviewHub />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </div>
+          </NewsProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
