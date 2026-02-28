@@ -55,12 +55,27 @@ export default function InterviewHub() {
         method: "POST",
         body: formData,
       });
+      
       const data = await res.json();
-      const qs: InterviewQuestion[] = Array.isArray(data) ? data : data.questions || [];
+      
+      // Robust Parsing Logic
+      let qs: InterviewQuestion[] = [];
+      if (Array.isArray(data)) {
+        qs = data;
+      } else if (data.questions && Array.isArray(data.questions)) {
+        qs = data.questions;
+      } else if (data.question) {
+        qs = [{ question: data.question, category: data.category || "General Profile" }];
+      }
+
       setQuestions(qs);
-      if (qs.length === 0) toast.info("No questions returned. Try a different DAF.");
+      if (qs.length === 0) {
+        toast.info("No questions returned. Check your n8n workflow output.");
+      } else {
+        toast.success(`Generated ${qs.length} high-probability questions!`);
+      }
     } catch (err: any) {
-      toast.error(err.message || "Failed to process DAF");
+      toast.error(err.message || "Failed to process DAF. Ensure n8n is active.");
     } finally {
       setLoadingQuestions(false);
     }
@@ -128,7 +143,6 @@ export default function InterviewHub() {
     setChatMessages((prev) => [...prev, { role: "candidate", text: answer }]);
     setTranscript("");
 
-    // Send to webhook for feedback
     try {
       const res = await fetch(INTERVIEW_WEBHOOK, {
         method: "POST",
@@ -141,8 +155,11 @@ export default function InterviewHub() {
           mode: "feedback",
         }),
       });
+      
       const data = await res.json();
-      const feedback = typeof data === "string" ? data : data.feedback || data.message || "Good attempt. Keep refining your answer structure.";
+      
+      // Mapping to your advanced n8n 'mentor_feedback' key
+      const feedback = data.mentor_feedback || data.feedback || data.message || "Observation recorded. Next question.";
 
       setChatMessages((prev) => [...prev, { role: "mentor", text: feedback }]);
 
@@ -164,7 +181,7 @@ export default function InterviewHub() {
     } catch {
       setChatMessages((prev) => [
         ...prev,
-        { role: "mentor", text: "Could not get feedback. Try again." },
+        { role: "mentor", text: "Could not get feedback. The board is busy processing." },
       ]);
     } finally {
       setSendingAnswer(false);
@@ -173,7 +190,6 @@ export default function InterviewHub() {
 
   return (
     <div className="min-h-screen">
-      {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background" />
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 text-center">
@@ -196,7 +212,6 @@ export default function InterviewHub() {
       </section>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 space-y-10">
-        {/* DAF Upload */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -229,11 +244,10 @@ export default function InterviewHub() {
             className="gold-glow-button mt-4 text-sm py-2.5 px-6 disabled:opacity-50 inline-flex items-center gap-2"
           >
             {loadingQuestions ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            {loadingQuestions ? "Processing..." : "Generate Questions"}
+            {loadingQuestions ? "Processing DAF..." : "Generate Questions"}
           </button>
         </motion.div>
 
-        {/* Question Bank */}
         <AnimatePresence>
           {questions.length > 0 && (
             <motion.div
@@ -247,7 +261,7 @@ export default function InterviewHub() {
                   <MessageSquare className="w-5 h-5 text-primary" />
                   High-Probability Question Bank
                 </h2>
-                <span className="text-xs text-muted-foreground">{questions.length} questions</span>
+                <span className="text-xs text-muted-foreground">{questions.length} questions loaded</span>
               </div>
               <Accordion type="single" collapsible className="space-y-2">
                 {questions.map((q, i) => (
@@ -270,7 +284,7 @@ export default function InterviewHub() {
                           {q.category}
                         </span>
                       )}
-                      {q.follow_up && <p className="mt-1">Follow-up: {q.follow_up}</p>}
+                      {q.follow_up && <p className="mt-1">Potential Follow-up: {q.follow_up}</p>}
                     </AccordionContent>
                   </AccordionItem>
                 ))}
@@ -287,7 +301,6 @@ export default function InterviewHub() {
           )}
         </AnimatePresence>
 
-        {/* Live Mock Chat */}
         <AnimatePresence>
           {chatActive && (
             <motion.div
@@ -298,11 +311,10 @@ export default function InterviewHub() {
             >
               <h2 className="font-serif text-xl font-bold gold-gradient-text mb-6 flex items-center gap-2">
                 <User className="w-5 h-5 text-primary" />
-                Live Mock Interview
+                Live Mock Interview Board
               </h2>
 
-              {/* Chat messages */}
-              <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 mb-6">
+              <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 mb-6 scrollbar-thin scrollbar-thumb-primary/20">
                 {chatMessages.map((msg, i) => (
                   <motion.div
                     key={i}
@@ -314,8 +326,8 @@ export default function InterviewHub() {
                       <div
                         className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold ${
                           msg.role === "board"
-                            ? "bg-primary/20 text-primary"
-                            : "bg-[hsl(var(--success)/0.2)] text-[hsl(var(--success))]"
+                            ? "bg-primary/20 text-primary border border-primary/30"
+                            : "bg-[hsl(var(--success)/0.2)] text-[hsl(var(--success))] border border-[hsl(var(--success)/0.3)]"
                         }`}
                       >
                         {msg.role === "board" ? "BM" : "MF"}
@@ -326,18 +338,18 @@ export default function InterviewHub() {
                         msg.role === "candidate"
                           ? "bg-primary/10 text-foreground border border-primary/20 rounded-br-none"
                           : msg.role === "mentor"
-                          ? "bg-[hsl(var(--success)/0.08)] text-foreground border border-[hsl(var(--success)/0.2)] rounded-bl-none"
-                          : "bg-secondary text-foreground border border-border rounded-bl-none"
+                          ? "bg-[hsl(var(--success)/0.08)] text-foreground border border-[hsl(var(--success)/0.2)] rounded-bl-none italic"
+                          : "bg-secondary text-foreground border border-border rounded-bl-none shadow-sm"
                       }`}
                     >
                       {msg.role === "mentor" && (
-                        <span className="text-[10px] uppercase tracking-wider text-[hsl(var(--success))] font-semibold block mb-1">
-                          Mentor Feedback
+                        <span className="text-[10px] uppercase tracking-wider text-[hsl(var(--success))] font-bold block mb-1">
+                          Mentor Observation
                         </span>
                       )}
                       {msg.role === "board" && (
-                        <span className="text-[10px] uppercase tracking-wider text-primary font-semibold block mb-1">
-                          Board Member
+                        <span className="text-[10px] uppercase tracking-wider text-primary font-bold block mb-1">
+                          Board Chairperson
                         </span>
                       )}
                       {msg.text}
@@ -347,12 +359,17 @@ export default function InterviewHub() {
                 <div ref={chatEndRef} />
               </div>
 
-              {/* Answer input */}
               <div className="border-t border-border pt-4">
                 <div className="flex items-start gap-3">
                   <textarea
                     value={transcript}
                     onChange={(e) => setTranscript(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        submitAnswer();
+                      }
+                    }}
                     placeholder="Type your answer or use the microphone..."
                     rows={3}
                     className="flex-1 bg-secondary/40 border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
@@ -365,7 +382,6 @@ export default function InterviewHub() {
                           ? "bg-destructive/20 text-destructive border border-destructive/30 animate-pulse"
                           : "bg-secondary border border-border text-muted-foreground hover:text-foreground hover:border-primary/30"
                       }`}
-                      title={isRecording ? "Stop Recording" : "Record Answer"}
                     >
                       {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
                     </button>
@@ -373,7 +389,6 @@ export default function InterviewHub() {
                       onClick={submitAnswer}
                       disabled={sendingAnswer || !transcript.trim()}
                       className="w-11 h-11 rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-40"
-                      title="Submit Answer"
                     >
                       {sendingAnswer ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                     </button>
@@ -382,7 +397,7 @@ export default function InterviewHub() {
                 {isRecording && (
                   <p className="text-xs text-destructive mt-2 flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
-                    Recording... Speak clearly into your microphone
+                    Recording... The Board is listening.
                   </p>
                 )}
               </div>
