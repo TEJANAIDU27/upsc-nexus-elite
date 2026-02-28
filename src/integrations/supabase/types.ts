@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      dashboard_cache: {
+        Row: {
+          id: string
+          news_data: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          news_data?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          news_data?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       mock_test_history: {
         Row: {
           created_at: string
