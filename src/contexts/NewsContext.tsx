@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from "react";
-import { ENDPOINTS, type NewsItem } from "@/lib/api";
+import { ENDPOINTS, normalizeNewsItems, type NewsItem } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 
@@ -60,7 +60,7 @@ export function NewsProvider({ children }: { children: ReactNode }) {
           }),
         });
         const data = await res.json();
-        const items: NewsItem[] = Array.isArray(data) ? data : [data];
+        const items: NewsItem[] = normalizeNewsItems(data);
         setNews(items);
         setHasFetched(true);
 
