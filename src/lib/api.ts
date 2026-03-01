@@ -1,6 +1,6 @@
 export const ENDPOINTS = {
-  DASHBOARD_NEWS: "https://tejanaidu8.app.n8n.cloud/webhook/upsc_dashboard_news",
-  MOCK_TEST: "https://tejanaidu8.app.n8n.cloud/webhook/upsc_mock_test_questions",
+  DASHBOARD_NEWS: "https://tejanaidu9.app.n8n.cloud/webhook/upsc_dashboard_news",
+  MOCK_TEST: "https://tejanaidu9.app.n8n.cloud/webhook/upsc_mock_test_questions",
 } as const;
 
 export interface NewsItem {
