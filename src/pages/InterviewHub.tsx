@@ -50,6 +50,7 @@ export default function InterviewHub() {
       formData.append("file", dafFile);
       formData.append("email", user?.email ?? "");
       formData.append("user_id", user?.id ?? "");
+      formData.append("mode", "daf");
 
       const res = await fetch(INTERVIEW_WEBHOOK, {
         method: "POST",
