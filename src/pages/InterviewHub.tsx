@@ -173,17 +173,47 @@ export default function InterviewHub() {
     toast.info("Continue the discussion. Your follow-up will be sent on the same topic.");
   };
 
-  const handleNextQuestion = () => {
+  const handleNextQuestion = async () => {
     setAwaitingAction(false);
-    const nextIdx = currentQIdx + 1;
-    if (nextIdx < questions.length) {
-      setCurrentQIdx(nextIdx);
-      setChatMessages((prev) => [...prev, { role: "board", text: questions[nextIdx].question }]);
-    } else {
+    setSendingAnswer(true);
+    setChatMessages((prev) => [...prev, { role: "board", text: "Board is reviewing your DAF for the next topic..." }]);
+
+    try {
+      const formData = new FormData();
+      if (dafFile) formData.append("file", dafFile);
+      formData.append("email", user?.email ?? "");
+      formData.append("user_id", user?.id ?? "");
+      formData.append("mode", "daf");
+
+      const res = await fetch(INTERVIEW_WEBHOOK, { method: "POST", body: formData });
+      const data = await res.json();
+
+      let newQ: InterviewQuestion | null = null;
+      if (Array.isArray(data) && data.length > 0) newQ = data[0];
+      else if (data.question) newQ = { question: data.question, category: data.category || "General Profile" };
+
+      if (newQ) {
+        const nextIdx = currentQIdx + 1;
+        setQuestions((prev) => [...prev, newQ!]);
+        setCurrentQIdx(nextIdx);
+        // Remove the loading message and add the real question
+        setChatMessages((prev) => [
+          ...prev.slice(0, -1),
+          { role: "board", text: newQ!.question },
+        ]);
+      } else {
+        setChatMessages((prev) => [
+          ...prev.slice(0, -1),
+          { role: "board", text: "Thank you. That concludes your interview. You may leave." },
+        ]);
+      }
+    } catch {
       setChatMessages((prev) => [
-        ...prev,
-        { role: "board", text: "Thank you. That concludes your interview. You may leave." },
+        ...prev.slice(0, -1),
+        { role: "board", text: "The board encountered an issue. Please try again." },
       ]);
+    } finally {
+      setSendingAnswer(false);
     }
   };
 
