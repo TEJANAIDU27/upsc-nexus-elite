@@ -80,7 +80,7 @@ export default function Archive() {
         className="mb-8"
       >
         <h1 className="font-serif text-3xl font-bold">
-          <span className="gold-gradient-text">Your Archive</span>
+          <span className="gold-gradient-text">My Collections</span>
         </h1>
         <p className="text-muted-foreground text-sm mt-1">Saved news and mock test history</p>
       </motion.div>
