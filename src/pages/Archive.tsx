@@ -6,13 +6,15 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-interface SavedNews {
+interface saved_news {
+
+  
   id: string;
-  headline: string;
-  summary: string | null;
-  gs_tag: string | null;
-  date: string | null;
-  created_at: string;
+  headline: text;
+  summary: text | null;
+  gs_tag: text | null;
+  date: text | null;
+  created_at: text;
 }
 
 interface MockTestRecord {
