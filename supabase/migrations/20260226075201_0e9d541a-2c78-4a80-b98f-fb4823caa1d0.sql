@@ -6,7 +6,7 @@ CREATE TABLE public.saved_news (
   headline TEXT NOT NULL,
   summary TEXT,
   gs_tag TEXT,
-  date TEXT,
+  
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
