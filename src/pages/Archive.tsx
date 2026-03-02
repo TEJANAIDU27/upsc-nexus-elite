@@ -6,9 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-interface saved_news {
-
-  
+interface SavedNews {
   id: string;
   headline: string;
   summary: string | null;
