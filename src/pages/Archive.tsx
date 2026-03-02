@@ -10,11 +10,11 @@ interface saved_news {
 
   
   id: string;
-  headline: text;
-  summary: text | null;
-  gs_tag: text | null;
-  date: text | null;
-  created_at: text;
+  headline: string;
+  summary: string | null;
+  gs_tag: string | null;
+  date: string | null;
+  created_at: string;
 }
 
 interface MockTestRecord {
