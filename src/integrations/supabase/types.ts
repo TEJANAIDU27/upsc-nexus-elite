@@ -62,6 +62,45 @@ export type Database = {
         }
         Relationships: []
       }
+      morning_digest: {
+        Row: {
+          category_tag: string | null
+          created_at: string | null
+          detailed_brief: string | null
+          gs_paper: string | null
+          id: number
+          image_url: string | null
+          published_date: string | null
+          short_snippet: string | null
+          source_link: string | null
+          title: string
+        }
+        Insert: {
+          category_tag?: string | null
+          created_at?: string | null
+          detailed_brief?: string | null
+          gs_paper?: string | null
+          id?: never
+          image_url?: string | null
+          published_date?: string | null
+          short_snippet?: string | null
+          source_link?: string | null
+          title: string
+        }
+        Update: {
+          category_tag?: string | null
+          created_at?: string | null
+          detailed_brief?: string | null
+          gs_paper?: string | null
+          id?: never
+          image_url?: string | null
+          published_date?: string | null
+          short_snippet?: string | null
+          source_link?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       saved_news: {
         Row: {
           created_at: string
