@@ -13,7 +13,7 @@ import {
 
 interface DigestItem {
   id: number;
-  title: string;
+  title?: string | null;
   short_snippet: string | null;
   detailed_brief: string | null;
   published_date: string | null;
@@ -24,12 +24,12 @@ interface DigestItem {
 }
 
 function formatTime(dateStr: string | null): string {
-  if (!dateStr) return "";
+  if (!dateStr) return "Just now"; // Fallback for null dates
   try {
     const d = new Date(dateStr);
     return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
   } catch {
-    return "";
+    return "Today";
   }
 }
 
@@ -59,26 +59,43 @@ export function MorningDigest() {
   const [selectedItem, setSelectedItem] = useState<DigestItem | null>(null);
 
   useEffect(() => {
-    async function fetch() {
+    async function fetchDigest() {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("morning_digest")
-        .select("*")
-        .order("published_date", { ascending: false })
-        .limit(5);
-      if (!error && data) setItems(data);
-      setLoading(false);
+      try {
+        // We order by 'id' descending so the newest database entries show first, 
+        // even if the 'published_date' column is null.
+        const { data, error } = await supabase
+          .from("morning_digest")
+          .select("*")
+          .order("id", { ascending: false }) 
+          .limit(10);
+
+        if (error) {
+          console.error("Supabase Error:", error.message);
+        } else if (data) {
+          console.log("Morning Digest Data Loaded:", data);
+          setItems(data);
+        }
+      } catch (err) {
+        console.error("Unexpected Error:", err);
+      } finally {
+        setLoading(false);
+      }
     }
-    fetch();
+    fetchDigest();
   }, []);
 
   if (loading) return <DigestSkeleton />;
 
   if (items.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground text-center py-8">
-        No digest items available yet. Check back soon!
-      </p>
+      <div className="flex flex-col items-center justify-center py-12 px-4 border border-dashed rounded-lg border-muted-foreground/20">
+        <p className="text-sm text-muted-foreground text-center">
+          No digest items found in the database. 
+          <br />
+          <span className="text-[10px]">Check your n8n connection or RLS policies.</span>
+        </p>
+      </div>
     );
   }
 
@@ -86,9 +103,9 @@ export function MorningDigest() {
     <>
       <div className="py-2">
         <div className="flex items-center gap-2 mb-6">
-          <Radio className="w-4 h-4 text-primary" />
+          <Radio className="w-4 h-4 text-primary animate-pulse" />
           <p className="text-sm text-muted-foreground">
-            Top 5 curated points from PIB &amp; AIR — updated daily
+            Top curated points — updated daily
           </p>
         </div>
 
@@ -118,7 +135,10 @@ export function MorningDigest() {
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 glass-card p-4 hover:border-primary/20 transition-colors">
+                <div 
+                  className="flex-1 glass-card p-4 hover:border-primary/20 transition-colors cursor-pointer"
+                  onClick={() => item.detailed_brief && setSelectedItem(item)}
+                >
                   <div className="flex flex-wrap items-center gap-2 mb-2">
                     {item.category_tag && (
                       <span className="px-2 py-0.5 rounded-full bg-secondary text-foreground text-[10px] font-bold uppercase tracking-wider">
@@ -126,67 +146,4 @@ export function MorningDigest() {
                       </span>
                     )}
                     {item.gs_paper && (
-                      <span className="px-2 py-0.5 rounded-full bg-primary/15 text-primary text-[10px] font-semibold">
-                        {item.gs_paper}
-                      </span>
-                    )}
-                    <span className="text-[10px] text-muted-foreground sm:hidden">
-                      {formatTime(item.published_date)}
-                    </span>
-                  </div>
-                  <p className="text-sm text-foreground font-medium leading-snug">
-                    {item.short_snippet || item.title}
-                  </p>
-                  {item.detailed_brief && (
-                    <button
-                      onClick={() => setSelectedItem(item)}
-                      className="flex items-center gap-1 text-[10px] text-primary hover:underline mt-2"
-                    >
-                      Read full brief <ExternalLink className="w-2.5 h-2.5" />
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Detail Modal */}
-      <Dialog open={!!selectedItem} onOpenChange={(open) => !open && setSelectedItem(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="font-serif text-lg gold-gradient-text">
-              {selectedItem?.short_snippet || selectedItem?.title}
-            </DialogTitle>
-            <DialogDescription className="flex gap-2 pt-1">
-              {selectedItem?.category_tag && (
-                <span className="px-2 py-0.5 rounded-full bg-secondary text-foreground text-[10px] font-bold uppercase">
-                  {selectedItem.category_tag}
-                </span>
-              )}
-              {selectedItem?.gs_paper && (
-                <span className="px-2 py-0.5 rounded-full bg-primary/15 text-primary text-[10px] font-semibold">
-                  {selectedItem.gs_paper}
-                </span>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="prose prose-sm prose-invert max-w-none text-foreground/90 leading-relaxed whitespace-pre-line mt-2">
-            {selectedItem?.detailed_brief}
-          </div>
-          {selectedItem?.source_link && (
-            <a
-              href={selectedItem.source_link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
-            >
-              View original source <ExternalLink className="w-3 h-3" />
-            </a>
-          )}
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
+                      <span className="px-2 py-0.5 rounded-full bg-primary/15 text-primary text
