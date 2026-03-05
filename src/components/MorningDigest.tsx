@@ -24,7 +24,7 @@ interface DigestItem {
 }
 
 function formatTime(dateStr: string | null): string {
-  if (!dateStr) return "Just now"; // Fallback for null dates
+  if (!dateStr) return "Just now";
   try {
     const d = new Date(dateStr);
     return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
@@ -62,8 +62,6 @@ export function MorningDigest() {
     async function fetchDigest() {
       setLoading(true);
       try {
-        // We order by 'id' descending so the newest database entries show first, 
-        // even if the 'published_date' column is null.
         const { data, error } = await supabase
           .from("morning_digest")
           .select("*")
@@ -73,7 +71,6 @@ export function MorningDigest() {
         if (error) {
           console.error("Supabase Error:", error.message);
         } else if (data) {
-          console.log("Morning Digest Data Loaded:", data);
           setItems(data);
         }
       } catch (err) {
@@ -91,9 +88,7 @@ export function MorningDigest() {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4 border border-dashed rounded-lg border-muted-foreground/20">
         <p className="text-sm text-muted-foreground text-center">
-          No digest items found in the database. 
-          <br />
-          <span className="text-[10px]">Check your n8n connection or RLS policies.</span>
+          No digest items found in the database.
         </p>
       </div>
     );
@@ -110,7 +105,6 @@ export function MorningDigest() {
         </div>
 
         <div className="relative">
-          {/* Timeline line */}
           <div className="absolute left-[5.5rem] top-0 bottom-0 w-px bg-border hidden sm:block" />
 
           <div className="space-y-0">
@@ -122,19 +116,16 @@ export function MorningDigest() {
                 transition={{ delay: i * 0.1 }}
                 className="relative flex gap-4 sm:gap-6 pb-6 last:pb-0"
               >
-                {/* Time */}
                 <div className="w-20 shrink-0 text-right hidden sm:block pt-1">
                   <span className="text-[10px] text-muted-foreground font-mono">
                     {formatTime(item.published_date)}
                   </span>
                 </div>
 
-                {/* Dot */}
                 <div className="relative hidden sm:flex items-start pt-1.5">
                   <div className="w-3 h-3 rounded-full bg-primary border-2 border-background shadow-[0_0_8px_hsl(var(--gold)/0.4)] -translate-x-1/2" />
                 </div>
 
-                {/* Content */}
                 <div 
                   className="flex-1 glass-card p-4 hover:border-primary/20 transition-colors cursor-pointer"
                   onClick={() => item.detailed_brief && setSelectedItem(item)}
@@ -146,4 +137,63 @@ export function MorningDigest() {
                       </span>
                     )}
                     {item.gs_paper && (
-                      <span className="px-2 py-0.5 rounded-full bg-primary/15 text-primary text
+                      <span className="px-2 py-0.5 rounded-full bg-primary/15 text-primary text-[10px] font-semibold">
+                        {item.gs_paper}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-muted-foreground sm:hidden">
+                      {formatTime(item.published_date)}
+                    </span>
+                  </div>
+                  <p className="text-sm text-foreground font-medium leading-snug">
+                    {item.short_snippet || item.title || "New Update"}
+                  </p>
+                  {item.detailed_brief && (
+                    <div className="flex items-center gap-1 text-[10px] text-primary hover:underline mt-2">
+                      Read full brief <ExternalLink className="w-2.5 h-2.5" />
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <Dialog open={!!selectedItem} onOpenChange={(open) => !open && setSelectedItem(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-lg gold-gradient-text">
+              {selectedItem?.short_snippet || selectedItem?.title}
+            </DialogTitle>
+            <DialogDescription className="flex gap-2 pt-1">
+              {selectedItem?.category_tag && (
+                <span className="px-2 py-0.5 rounded-full bg-secondary text-foreground text-[10px] font-bold uppercase">
+                  {selectedItem.category_tag}
+                </span>
+              )}
+              {selectedItem?.gs_paper && (
+                <span className="px-2 py-0.5 rounded-full bg-primary/15 text-primary text-[10px] font-semibold">
+                  {selectedItem.gs_paper}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="prose prose-sm prose-invert max-w-none text-foreground/90 leading-relaxed whitespace-pre-line mt-2">
+            {selectedItem?.detailed_brief}
+          </div>
+          {selectedItem?.source_link && (
+            <a
+              href={selectedItem.source_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-4 border-t border-border pt-4"
+            >
+              View original source <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
