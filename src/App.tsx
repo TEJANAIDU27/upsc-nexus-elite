@@ -15,7 +15,9 @@ import RevisionDashboard from "@/pages/RevisionDashboard";
 import InterviewHub from "@/pages/InterviewHub";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: 1 } },
+});
 
 function RootRoute() {
   const { user, loading } = useAuth();
