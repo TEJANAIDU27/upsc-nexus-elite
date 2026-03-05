@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Radio, ExternalLink, X } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { motion } from "framer-motion";
+import { Radio, ExternalLink, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -58,29 +59,32 @@ export function MorningDigest() {
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<DigestItem | null>(null);
 
-  useEffect(() => {
-    async function fetchDigest() {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from("morning_digest")
-          .select("*")
-          .order("id", { ascending: false }) 
-          .limit(10);
+  const fetchDigest = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("morning_digest")
+        .select("*")
+        .order("id", { ascending: false })
+        .limit(10);
 
-        if (error) {
-          console.error("Supabase Error:", error.message);
-        } else if (data) {
-          setItems(data);
-        }
-      } catch (err) {
-        console.error("Unexpected Error:", err);
-      } finally {
-        setLoading(false);
+      console.log("Morning Digest data:", data);
+      console.log("Morning Digest error:", error);
+
+      if (error) {
+        console.error("Supabase Error:", error.message);
       }
+      setItems(data && data.length > 0 ? data : []);
+    } catch (err) {
+      console.error("Unexpected Error:", err);
+    } finally {
+      setLoading(false);
     }
-    fetchDigest();
   }, []);
+
+  useEffect(() => {
+    fetchDigest();
+  }, [fetchDigest]);
 
   if (loading) return <DigestSkeleton />;
 
@@ -102,6 +106,15 @@ export function MorningDigest() {
           <p className="text-sm text-muted-foreground">
             Top curated points — updated daily
           </p>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="ml-auto h-7 w-7"
+            onClick={fetchDigest}
+            disabled={loading}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+          </Button>
         </div>
 
         <div className="relative">
