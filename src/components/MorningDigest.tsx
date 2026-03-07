@@ -63,7 +63,8 @@ export function MorningDigest() {
       const { data, error } = await supabase
         .from("morning_digest")
         .select("*")
-        .eq("published_date", today)
+        .gte("created_at", `${today}T00:00:00`)
+        .lt("created_at", `${today}T23:59:59.999999`)
         .order("id", { ascending: false });
 
       console.log("Morning Digest data:", data);
