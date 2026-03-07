@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Radio, ExternalLink, RefreshCw } from "lucide-react";
+import { Radio, ExternalLink, RefreshCw, CalendarOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import {
 
 interface DigestItem {
   id: number;
-  title?: string | null;
+  title: string;
   short_snippet: string | null;
   detailed_brief: string | null;
   published_date: string | null;
@@ -24,14 +24,9 @@ interface DigestItem {
   image_url: string | null;
 }
 
-function formatTime(dateStr: string | null): string {
-  if (!dateStr) return "Just now";
-  try {
-    const d = new Date(dateStr);
-    return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
-  } catch {
-    return "Today";
-  }
+function getTodayISO(): string {
+  const now = new Date();
+  return now.toISOString().slice(0, 10);
 }
 
 function DigestSkeleton() {
@@ -62,11 +57,14 @@ export function MorningDigest() {
   const fetchDigest = useCallback(async () => {
     setLoading(true);
     try {
+      const today = getTodayISO();
+      console.log("Fetching morning_digest for date:", today);
+
       const { data, error } = await supabase
         .from("morning_digest")
         .select("*")
-        .order("id", { ascending: false })
-        .limit(10);
+        .eq("published_date", today)
+        .order("id", { ascending: false });
 
       console.log("Morning Digest data:", data);
       console.log("Morning Digest error:", error);
@@ -91,9 +89,13 @@ export function MorningDigest() {
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4 border border-dashed rounded-lg border-muted-foreground/20">
-        <p className="text-sm text-muted-foreground text-center">
-          No digest items found in the database.
+        <CalendarOff className="w-8 h-8 text-muted-foreground/40 mb-3" />
+        <p className="text-sm text-muted-foreground text-center mb-4">
+          Check back later for today's updates.
         </p>
+        <Button variant="outline" size="sm" onClick={fetchDigest}>
+          <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Retry
+        </Button>
       </div>
     );
   }
@@ -131,7 +133,7 @@ export function MorningDigest() {
               >
                 <div className="w-20 shrink-0 text-right hidden sm:block pt-1">
                   <span className="text-[10px] text-muted-foreground font-mono">
-                    {formatTime(item.published_date)}
+                    {item.published_date || "Today"}
                   </span>
                 </div>
 
@@ -139,7 +141,7 @@ export function MorningDigest() {
                   <div className="w-3 h-3 rounded-full bg-primary border-2 border-background shadow-[0_0_8px_hsl(var(--gold)/0.4)] -translate-x-1/2" />
                 </div>
 
-                <div 
+                <div
                   className="flex-1 glass-card p-4 hover:border-primary/20 transition-colors cursor-pointer"
                   onClick={() => item.detailed_brief && setSelectedItem(item)}
                 >
@@ -154,16 +156,18 @@ export function MorningDigest() {
                         {item.gs_paper}
                       </span>
                     )}
-                    <span className="text-[10px] text-muted-foreground sm:hidden">
-                      {formatTime(item.published_date)}
-                    </span>
                   </div>
-                  <p className="text-sm text-foreground font-medium leading-snug">
-                    {item.short_snippet || item.title || "New Update"}
-                  </p>
+                  <h3 className="text-sm text-foreground font-semibold leading-snug mb-1">
+                    {item.title}
+                  </h3>
+                  {item.short_snippet && (
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {item.short_snippet}
+                    </p>
+                  )}
                   {item.detailed_brief && (
                     <div className="flex items-center gap-1 text-[10px] text-primary hover:underline mt-2">
-                      Read full brief <ExternalLink className="w-2.5 h-2.5" />
+                      Read More <ExternalLink className="w-2.5 h-2.5" />
                     </div>
                   )}
                 </div>
@@ -177,7 +181,7 @@ export function MorningDigest() {
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-serif text-lg gold-gradient-text">
-              {selectedItem?.short_snippet || selectedItem?.title}
+              {selectedItem?.title}
             </DialogTitle>
             <DialogDescription className="flex gap-2 pt-1">
               {selectedItem?.category_tag && (
