@@ -29,6 +29,12 @@ function getTodayISO(): string {
   return now.toISOString().slice(0, 10);
 }
 
+function getTomorrowISO(): string {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return tomorrow.toISOString().slice(0, 10);
+}
+
 function DigestSkeleton() {
   return (
     <div className="space-y-6">
