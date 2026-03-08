@@ -64,13 +64,14 @@ export function MorningDigest() {
     setLoading(true);
     try {
       const today = getTodayISO();
-      console.log("Fetching morning_digest for date:", today);
+      const tomorrow = getTomorrowISO();
+      console.log("Fetching morning_digest for date range:", { today, tomorrow });
 
       const { data, error } = await supabase
         .from("morning_digest")
         .select("*")
-        .gte("created_at", `${today}T00:00:00`)
-        .lt("created_at", `${today}T23:59:59.999999`)
+        .gte("created_at", today)
+        .lt("created_at", tomorrow)
         .order("id", { ascending: false });
 
       console.log("Morning Digest data:", data);
