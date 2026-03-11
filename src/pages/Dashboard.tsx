@@ -240,11 +240,46 @@ export default function Dashboard() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
               >
-                {loading ? (
+                {/* News Source Selector */}
+                <div className="max-w-4xl mx-auto mb-6">
+                  <div className="glass-card p-4 sm:p-5">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Select News Source</p>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                      <Select value={selectedSource} onValueChange={(v) => { setSelectedSource(v as NewsSourceId); setSourceNews(null); }}>
+                        <SelectTrigger className="flex-1 bg-secondary/60 border-border text-foreground h-11">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {NEWS_SOURCES.map((src) => (
+                            <SelectItem key={src.id} value={src.id}>
+                              {src.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        onClick={handleFetchBySource}
+                        disabled={sourceFetching}
+                        className="h-11 px-6 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold shrink-0"
+                      >
+                        {sourceFetching ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Fetching…
+                          </>
+                        ) : (
+                          "Fetch News"
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {(loading || sourceFetching) && !sourceNews ? (
                   <div className="max-w-3xl mx-auto">
                     <ShimmerHero />
                   </div>
-                ) : error ? (
+                ) : error && !sourceNews ? (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -254,7 +289,16 @@ export default function Dashboard() {
                   </motion.div>
                 ) : (
                   <div className="max-w-4xl mx-auto space-y-4">
-                    {news.map((item, index) => {
+                    {sourceNews && (
+                      <div className="flex items-center gap-2 mb-2 px-1">
+                        <Newspaper className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-semibold text-foreground">
+                          {NEWS_SOURCES.find((s) => s.id === selectedSource)?.label}
+                        </span>
+                        <span className="text-xs text-muted-foreground">— {displayedNews.length} articles</span>
+                      </div>
+                    )}
+                    {displayedNews.map((item, index) => {
                       const isSaved = savedHeadlines.has(item.headline);
                       return (
                         <motion.article
