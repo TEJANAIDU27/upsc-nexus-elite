@@ -9,7 +9,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import heroBg from "@/assets/hero-bg.jpg";
-import type { NewsItem } from "@/lib/api";
+import { NEWS_SOURCES, normalizeNewsItems, type NewsItem, type NewsSourceId } from "@/lib/api";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 const videoFeeds = [
   { title: "Indian Polity - Laxmikanth Summary", channel: "UPSC Nexus", duration: "45:20", views: "12K" },
