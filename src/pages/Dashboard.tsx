@@ -49,11 +49,37 @@ export default function Dashboard() {
   const [savedHeadlines, setSavedHeadlines] = useState<Set<string>>(new Set());
   const [savingIndex, setSavingIndex] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedSource, setSelectedSource] = useState<NewsSourceId>("economic-times");
+  const [sourceNews, setSourceNews] = useState<NewsItem[] | null>(null);
+  const [sourceFetching, setSourceFetching] = useState(false);
 
   // Fetch news on mount (from context/cache)
   useEffect(() => {
     fetchNews();
   }, [fetchNews]);
+
+  const handleFetchBySource = async () => {
+    const source = NEWS_SOURCES.find((s) => s.id === selectedSource);
+    if (!source) return;
+    setSourceFetching(true);
+    try {
+      const res = await fetch(source.endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user?.email ?? null, user_id: user?.id ?? null }),
+      });
+      const data = await res.json();
+      const items = normalizeNewsItems(data);
+      setSourceNews(items);
+      toast.success(`Fetched ${items.length} articles from ${source.label}`);
+    } catch (err: any) {
+      toast.error("Failed to fetch news. Please try again.");
+    } finally {
+      setSourceFetching(false);
+    }
+  };
+
+  const displayedNews = sourceNews ?? news;
 
   // Fetch saved news headlines for current user
   useEffect(() => {
