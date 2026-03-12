@@ -10,6 +10,7 @@ import LandingPage from "@/pages/LandingPage";
 import AuthPage from "@/pages/AuthPage";
 import Dashboard from "@/pages/Dashboard";
 import MockTest from "@/pages/MockTest";
+import ExamHall from "@/pages/ExamHall";
 import Archive from "@/pages/Archive";
 import RevisionDashboard from "@/pages/RevisionDashboard";
 import InterviewHub from "@/pages/InterviewHub";
