@@ -132,7 +132,7 @@ export default function MockTest() {
           className="text-center max-w-lg"
         >
           <h1 className="font-serif text-4xl sm:text-5xl font-bold mb-4">
-            <span className="gold-gradient-text">UPSC Mock Test</span>
+            <span className="gold-gradient-text">Daily Sprint</span>
           </h1>
           <p className="text-muted-foreground text-lg mb-8">
             20 questions • 20 minutes • UPSC Prelims pattern

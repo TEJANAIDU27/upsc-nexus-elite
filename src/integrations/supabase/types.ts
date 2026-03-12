@@ -101,6 +101,36 @@ export type Database = {
         }
         Relationships: []
       }
+      prelims_ultimate_mock: {
+        Row: {
+          correct_option: string | null
+          explanation: string | null
+          id: string
+          options: Json | null
+          question_text: string | null
+          subject_category: string | null
+          test_id: string | null
+        }
+        Insert: {
+          correct_option?: string | null
+          explanation?: string | null
+          id?: string
+          options?: Json | null
+          question_text?: string | null
+          subject_category?: string | null
+          test_id?: string | null
+        }
+        Update: {
+          correct_option?: string | null
+          explanation?: string | null
+          id?: string
+          options?: Json | null
+          question_text?: string | null
+          subject_category?: string | null
+          test_id?: string | null
+        }
+        Relationships: []
+      }
       saved_news: {
         Row: {
           created_at: string

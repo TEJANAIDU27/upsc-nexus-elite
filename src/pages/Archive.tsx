@@ -82,7 +82,7 @@ export default function Archive() {
         <h1 className="font-serif text-3xl font-bold">
           <span className="gold-gradient-text">My Collections</span>
         </h1>
-        <p className="text-muted-foreground text-sm mt-1">Saved news and mock test history</p>
+        <p className="text-muted-foreground text-sm mt-1">Saved news and daily sprint history</p>
       </motion.div>
 
       {/* Tab switcher */}
@@ -107,7 +107,7 @@ export default function Archive() {
           }`}
         >
           <Trophy className="w-4 h-4" />
-          Mock Tests ({mockTests.length})
+          Daily Sprints ({mockTests.length})
         </button>
       </div>
 
@@ -172,7 +172,7 @@ export default function Archive() {
         mockTests.length === 0 ? (
           <div className="glass-card p-8 text-center">
             <Brain className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground">No mock tests taken yet. Try one from the Mock Test page.</p>
+            <p className="text-muted-foreground">No sprints taken yet. Try one from the Daily Sprint page.</p>
           </div>
         ) : (
           <div className="space-y-3">
