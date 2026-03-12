@@ -82,7 +82,7 @@ export default function Archive() {
         <h1 className="font-serif text-3xl font-bold">
           <span className="gold-gradient-text">My Collections</span>
         </h1>
-        <p className="text-muted-foreground text-sm mt-1">Saved news and mock test history</p>
+        <p className="text-muted-foreground text-sm mt-1">Saved news and daily sprint history</p>
       </motion.div>
 
       {/* Tab switcher */}

@@ -41,6 +41,7 @@ const App = () => (
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/mock-test" element={<MockTest />} />
+                <Route path="/exam-hall" element={<ExamHall />} />
                 <Route path="/archive" element={<Archive />} />
                 <Route path="/revision" element={<RevisionDashboard />} />
                 <Route path="/interview" element={<InterviewHub />} />
