@@ -172,7 +172,7 @@ export default function Archive() {
         mockTests.length === 0 ? (
           <div className="glass-card p-8 text-center">
             <Brain className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground">No mock tests taken yet. Try one from the Mock Test page.</p>
+            <p className="text-muted-foreground">No sprints taken yet. Try one from the Daily Sprint page.</p>
           </div>
         ) : (
           <div className="space-y-3">
