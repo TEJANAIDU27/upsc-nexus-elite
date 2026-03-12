@@ -107,7 +107,7 @@ export default function Archive() {
           }`}
         >
           <Trophy className="w-4 h-4" />
-          Mock Tests ({mockTests.length})
+          Daily Sprints ({mockTests.length})
         </button>
       </div>
 
