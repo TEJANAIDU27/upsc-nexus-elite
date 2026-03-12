@@ -261,7 +261,7 @@ export default function ExamHall() {
             <span className="gold-gradient-text">Nexus Prelims Simulator</span>
           </h1>
           <p className="text-muted-foreground text-lg mb-2">
-            200 questions • 120 minutes • UPSC Prelims pattern
+            100 questions • 120 minutes • UPSC Prelims pattern
           </p>
           <p className="text-muted-foreground text-sm mb-8">
             +2 for correct • −0.66 for wrong • Negative marking applied
