@@ -103,31 +103,32 @@ export type Database = {
       }
       prelims_ultimate_mock: {
         Row: {
-          correct_option: string | null
-          explanation: string | null
-          id: string
+          correct_option: text | null
+          explanation: text | null
+          id: text
           options: Json | null
-          question_text: string | null
-          subject_category: string | null
+          question_text: text | null
+          subject_category: text | null
           test_id: string | null
         }
         Insert: {
-          correct_option?: string | null
-          explanation?: string | null
+          correct_option?: text | null
+          explanation?: text | null
           id?: string
           options?: Json | null
-          question_text?: string | null
-          subject_category?: string | null
+          question_text?: text | null
+          subject_category?: text | null
           test_id?: string | null
         }
         Update: {
-          correct_option?: string | null
-          explanation?: string | null
+          correct_option?: text | null
+          explanation?: text | null
           id?: string
           options?: Json | null
-          question_text?: string | null
-          subject_category?: string | null
+          question_text?: text | null
+          subject_category?: text | null
           test_id?: string | null
+
         }
         Relationships: []
       }
