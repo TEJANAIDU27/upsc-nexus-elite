@@ -53,10 +53,7 @@ export default function Dashboard() {
   const [sourceNews, setSourceNews] = useState<NewsItem[] | null>(null);
   const [sourceFetching, setSourceFetching] = useState(false);
 
-  // Fetch news on mount (from context/cache)
-  useEffect(() => {
-    fetchNews();
-  }, [fetchNews]);
+  // No auto-fetch on mount — user must select a source and click Fetch News
 
   const handleFetchBySource = async () => {
     const source = NEWS_SOURCES.find((s) => s.id === selectedSource);
