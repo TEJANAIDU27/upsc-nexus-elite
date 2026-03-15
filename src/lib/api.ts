@@ -1,13 +1,13 @@
 export const ENDPOINTS = {
-  DASHBOARD_NEWS: "https://tejanaidu9.app.n8n.cloud/webhook/upsc_dashboard_news",
-  MOCK_TEST: "https://tejanaidu9.app.n8n.cloud/webhook/upsc_mock_test_questions",
+  DASHBOARD_NEWS: "https://tejanaidu10.app.n8n.cloud/webhook/upsc_dashboard_news",
+  MOCK_TEST: "https://tejanaidu10.app.n8n.cloud/webhook/upsc_mock_test_questions",
 } as const;
 
 export const NEWS_SOURCES = [
-  { id: "economic-times", label: "Economic Times", endpoint: "https://tejanaidu9.app.n8n.cloud/webhook/upsc_dashboard_news_econimic_times" },
-  { id: "the-hindu", label: "The Hindu", endpoint: "https://tejanaidu9.app.n8n.cloud/webhook/upsc_dashboard_news_hindu" },
-  { id: "times-of-india", label: "Times of India", endpoint: "https://tejanaidu9.app.n8n.cloud/webhook/upsc_dashboard_news_times_of_india" },
-  { id: "bbc", label: "BBC", endpoint: "https://tejanaidu9.app.n8n.cloud/webhook/upsc_dashboard_news_bbc" },
+  { id: "economic-times", label: "Economic Times", endpoint: "https://tejanaidu10.app.n8n.cloud/webhook/upsc_dashboard_news_econimic_times" },
+  { id: "the-hindu", label: "The Hindu", endpoint: "https://tejanaidu10.app.n8n.cloud/webhook/upsc_dashboard_news_hindu" },
+  { id: "times-of-india", label: "Times of India", endpoint: "https://tejanaidu10.app.n8n.cloud/webhook/upsc_dashboard_news_times_of_india" },
+  { id: "bbc", label: "BBC", endpoint: "https://tejanaidu10.app.n8n.cloud/webhook/upsc_dashboard_news_bbc" },
 ] as const;
 
 export type NewsSourceId = typeof NEWS_SOURCES[number]["id"];
