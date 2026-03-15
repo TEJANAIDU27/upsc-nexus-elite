@@ -91,9 +91,8 @@ export default function Dashboard() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchNews(true);
+    await handleFetchBySource();
     setRefreshing(false);
-    toast.success("News refreshed!");
   };
 
   const handleSaveNews = async (item: NewsItem, index: number) => {
