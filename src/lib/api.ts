@@ -1,6 +1,6 @@
 export const ENDPOINTS = {
   DASHBOARD_NEWS: "https://n8n.srv1495892.hstgr.cloud/webhook/upsc_dashboard_news",
-  MOCK_TEST: "https://tejanaidu10.app.n8n.cloud/webhook/upsc_mock_test_questions",
+  MOCK_TEST: "https://n8n.srv1495892.hstgr.cloud/webhook/upsc_mock_test_questions",
 } as const;
 
 export const NEWS_SOURCES = [
