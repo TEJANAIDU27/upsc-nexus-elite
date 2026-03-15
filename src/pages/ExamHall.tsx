@@ -107,10 +107,13 @@ export default function ExamHall() {
     })
       .then((res) => res.json())
       .then((data) => {
-        const raw: SimQuestion[] = Array.isArray(data) ? data : data.questions || [];
-        const q = raw.map((item) => ({
-          ...item,
+        const raw: RawQuestion[] = Array.isArray(data) ? data : data.questions || [];
+        const q: SimQuestion[] = raw.map((item) => ({
+          question: item.question_text || item.question || "",
           options: normalizeOptions(item.options),
+          correctAnswer: item.correct_option || item.correctAnswer || "",
+          detailedExplanation: item.explanation || item.detailedExplanation || "",
+          subjectCategory: item.subject_category || "",
         }));
         setQuestions(q);
         setStarted(true);
