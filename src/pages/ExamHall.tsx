@@ -105,14 +105,33 @@ export default function ExamHall() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: user?.email ?? null, user_id: user?.id ?? null }),
     })
-      .then((res) => res.json())
-      .then((data) => {
-        const raw: RawQuestion[] = Array.isArray(data) ? data : data.questions || [];
+      .then((res) => res.text())
+      .then((text) => {
+        console.log("[ExamHall] Raw response:", text.substring(0, 500));
+        let data: unknown;
+        try { data = JSON.parse(text); } catch { throw new Error("Invalid JSON from webhook"); }
+
+        // Extract array from various wrapper formats
+        let raw: RawQuestion[];
+        if (Array.isArray(data)) {
+          // Could be [[...]] (n8n double-wrap) or [{...}, ...]
+          raw = Array.isArray(data[0]) ? data[0] : data;
+        } else if (data && typeof data === "object") {
+          const d = data as Record<string, unknown>;
+          raw = (d.questions || d.output || d.data || d.items || []) as RawQuestion[];
+          if (!Array.isArray(raw)) raw = [];
+        } else {
+          raw = [];
+        }
+
+        console.log("[ExamHall] Parsed questions count:", raw.length);
+        if (raw.length === 0) throw new Error("No questions found in response");
+
         const q: SimQuestion[] = raw.map((item) => ({
-          question: item.question_text || item.question || "",
+          question: (item.question_text || item.question || "").replace(/\\n/g, "\n"),
           options: normalizeOptions(item.options),
           correctAnswer: item.correct_option || item.correctAnswer || "",
-          detailedExplanation: item.explanation || item.detailedExplanation || "",
+          detailedExplanation: (item.explanation || item.detailedExplanation || "").replace(/\\n/g, "\n"),
           subjectCategory: item.subject_category || "",
         }));
         setQuestions(q);
@@ -512,7 +531,7 @@ export default function ExamHall() {
               </button>
             </div>
 
-            <h2 className="text-lg sm:text-xl font-medium text-foreground mb-8 leading-relaxed font-serif">
+            <h2 className="text-lg sm:text-xl font-medium text-foreground mb-8 leading-relaxed font-serif whitespace-pre-line">
               {currentQuestion.question}
             </h2>
 
