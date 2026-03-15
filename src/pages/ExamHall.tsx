@@ -6,11 +6,24 @@ import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
+interface RawQuestion {
+  test_id?: string;
+  subject_category?: string;
+  question_text?: string;
+  question?: string;
+  options: string[] | Record<string, string>;
+  correct_option?: string;
+  correctAnswer?: string;
+  explanation?: string;
+  detailedExplanation?: string;
+}
+
 interface SimQuestion {
   question: string;
   options: string[];
   correctAnswer: string;
   detailedExplanation: string;
+  subjectCategory: string;
 }
 
 type QStatus = "unvisited" | "answered" | "review";
@@ -94,10 +107,13 @@ export default function ExamHall() {
     })
       .then((res) => res.json())
       .then((data) => {
-        const raw: SimQuestion[] = Array.isArray(data) ? data : data.questions || [];
-        const q = raw.map((item) => ({
-          ...item,
+        const raw: RawQuestion[] = Array.isArray(data) ? data : data.questions || [];
+        const q: SimQuestion[] = raw.map((item) => ({
+          question: item.question_text || item.question || "",
           options: normalizeOptions(item.options),
+          correctAnswer: item.correct_option || item.correctAnswer || "",
+          detailedExplanation: item.explanation || item.detailedExplanation || "",
+          subjectCategory: item.subject_category || "",
         }));
         setQuestions(q);
         setStarted(true);
@@ -472,10 +488,17 @@ export default function ExamHall() {
             transition={{ duration: 0.25 }}
             className="glass-card p-6 sm:p-8"
           >
-            <div className="flex items-center justify-between mb-6">
-              <span className="px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-semibold">
-                Question {currentQ + 1} / {questions.length}
-              </span>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-semibold">
+                  Question {currentQ + 1} / {questions.length}
+                </span>
+                {currentQuestion.subjectCategory && (
+                  <span className="px-3 py-1 rounded-full bg-accent/15 text-accent-foreground text-xs font-semibold border border-border">
+                    {currentQuestion.subjectCategory}
+                  </span>
+                )}
+              </div>
               <button
                 onClick={toggleReview}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
