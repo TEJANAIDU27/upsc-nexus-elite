@@ -531,7 +531,7 @@ export default function ExamHall() {
               </button>
             </div>
 
-            <h2 className="text-lg sm:text-xl font-medium text-foreground mb-8 leading-relaxed font-serif">
+            <h2 className="text-lg sm:text-xl font-medium text-foreground mb-8 leading-relaxed font-serif whitespace-pre-line">
               {currentQuestion.question}
             </h2>
 
