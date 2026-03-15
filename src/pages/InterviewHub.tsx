@@ -5,7 +5,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-const INTERVIEW_WEBHOOK = "https://tejanaidu10.app.n8n.cloud/webhook/interview";
+const INTERVIEW_WEBHOOK = "https://n8n.srv1495892.hstgr.cloud/webhook/interview";
 
 interface InterviewQuestion {
   question: string;
