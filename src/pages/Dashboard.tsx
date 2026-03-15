@@ -53,10 +53,7 @@ export default function Dashboard() {
   const [sourceNews, setSourceNews] = useState<NewsItem[] | null>(null);
   const [sourceFetching, setSourceFetching] = useState(false);
 
-  // Fetch news on mount (from context/cache)
-  useEffect(() => {
-    fetchNews();
-  }, [fetchNews]);
+  // No auto-fetch on mount — user must select a source and click Fetch News
 
   const handleFetchBySource = async () => {
     const source = NEWS_SOURCES.find((s) => s.id === selectedSource);
@@ -79,7 +76,7 @@ export default function Dashboard() {
     }
   };
 
-  const displayedNews = sourceNews ?? news;
+  const displayedNews = sourceNews ?? [];
 
   // Fetch saved news headlines for current user
   useEffect(() => {
@@ -94,9 +91,8 @@ export default function Dashboard() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchNews(true);
+    await handleFetchBySource();
     setRefreshing(false);
-    toast.success("News refreshed!");
   };
 
   const handleSaveNews = async (item: NewsItem, index: number) => {
@@ -275,17 +271,17 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {(loading || sourceFetching) && !sourceNews ? (
+                {sourceFetching ? (
                   <div className="max-w-3xl mx-auto">
                     <ShimmerHero />
                   </div>
-                ) : error && !sourceNews ? (
+                ) : displayedNews.length === 0 ? (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     className="glass-card p-6 max-w-3xl mx-auto text-center"
                   >
-                    <p className="text-muted-foreground">Unable to load news. Please try again later.</p>
+                    <p className="text-muted-foreground">Select a news source above and click <span className="text-primary font-semibold">Fetch News</span> to load articles.</p>
                   </motion.div>
                 ) : (
                   <div className="max-w-4xl mx-auto space-y-4">
