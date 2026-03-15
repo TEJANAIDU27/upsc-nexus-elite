@@ -76,7 +76,7 @@ export default function Dashboard() {
     }
   };
 
-  const displayedNews = sourceNews ?? news;
+  const displayedNews = sourceNews ?? [];
 
   // Fetch saved news headlines for current user
   useEffect(() => {
