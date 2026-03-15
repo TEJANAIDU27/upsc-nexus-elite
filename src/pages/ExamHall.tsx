@@ -87,7 +87,7 @@ export default function ExamHall() {
   const fetchQuestions = useCallback(() => {
     setLoading(true);
     setError(null);
-    fetch("https://tejanaidu9.app.n8n.cloud/webhook/nexus_prelims_simulator", {
+    fetch("https://tejanaidu10.app.n8n.cloud/webhook/nexus_prelims_simulator", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: user?.email ?? null, user_id: user?.id ?? null }),
