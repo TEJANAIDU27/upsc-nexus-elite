@@ -90,7 +90,7 @@ export function MainsPractice({ headline, gsTag }: MainsPracticeProps) {
     setLoading(true);
 
     try {
-      const res = await fetch("https://n8n.srv1495892.hstgr.cloudwebhook/evaluate", {
+      const res = await fetch("https://n8n.srv1495892.hstgr.cloud/webhook/evaluate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
