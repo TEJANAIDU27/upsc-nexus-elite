@@ -241,7 +241,7 @@ export default function Dashboard() {
                   <div className="glass-card p-4 sm:p-5">
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Select News Source</p>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                      <Select value={selectedSource} onValueChange={(v) => { setSelectedSource(v as NewsSourceId); setSourceNews(null); }}>
+                      <Select value={selectedSource} onValueChange={(v) => setSelectedSource(v as NewsSourceId)}>
                         <SelectTrigger className="flex-1 bg-secondary/60 border-border text-foreground h-11">
                           <SelectValue />
                         </SelectTrigger>

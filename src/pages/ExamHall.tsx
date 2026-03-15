@@ -6,11 +6,24 @@ import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
+interface RawQuestion {
+  test_id?: string;
+  subject_category?: string;
+  question_text?: string;
+  question?: string;
+  options: string[] | Record<string, string>;
+  correct_option?: string;
+  correctAnswer?: string;
+  explanation?: string;
+  detailedExplanation?: string;
+}
+
 interface SimQuestion {
   question: string;
   options: string[];
   correctAnswer: string;
   detailedExplanation: string;
+  subjectCategory: string;
 }
 
 type QStatus = "unvisited" | "answered" | "review";
