@@ -488,10 +488,17 @@ export default function ExamHall() {
             transition={{ duration: 0.25 }}
             className="glass-card p-6 sm:p-8"
           >
-            <div className="flex items-center justify-between mb-6">
-              <span className="px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-semibold">
-                Question {currentQ + 1} / {questions.length}
-              </span>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-semibold">
+                  Question {currentQ + 1} / {questions.length}
+                </span>
+                {currentQuestion.subjectCategory && (
+                  <span className="px-3 py-1 rounded-full bg-accent/15 text-accent-foreground text-xs font-semibold border border-border">
+                    {currentQuestion.subjectCategory}
+                  </span>
+                )}
+              </div>
               <button
                 onClick={toggleReview}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
