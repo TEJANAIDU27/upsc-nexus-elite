@@ -271,17 +271,17 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {(loading || sourceFetching) && !sourceNews ? (
+                {sourceFetching ? (
                   <div className="max-w-3xl mx-auto">
                     <ShimmerHero />
                   </div>
-                ) : error && !sourceNews ? (
+                ) : displayedNews.length === 0 ? (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     className="glass-card p-6 max-w-3xl mx-auto text-center"
                   >
-                    <p className="text-muted-foreground">Unable to load news. Please try again later.</p>
+                    <p className="text-muted-foreground">Select a news source above and click <span className="text-primary font-semibold">Fetch News</span> to load articles.</p>
                   </motion.div>
                 ) : (
                   <div className="max-w-4xl mx-auto space-y-4">
