@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Newspaper, Tag, Clock, Play, TrendingUp, Users, Award, Sun, LayoutGrid, Bookmark, Loader2, RefreshCw } from "lucide-react";
 import { ShimmerHero } from "@/components/ShimmerLoaders";
@@ -12,6 +12,8 @@ import heroBg from "@/assets/hero-bg.jpg";
 import { NEWS_SOURCES, normalizeNewsItems, type NewsItem, type NewsSourceId } from "@/lib/api";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+
+const DASHBOARD_STORAGE_KEY = "nexus_dashboard_state";
 
 const videoFeeds = [
   { title: "Indian Polity - Laxmikanth Summary", channel: "UPSC Nexus", duration: "45:20", views: "12K" },
@@ -52,8 +54,33 @@ export default function Dashboard() {
   const [selectedSource, setSelectedSource] = useState<NewsSourceId>("economic-times");
   const [sourceNews, setSourceNews] = useState<NewsItem[] | null>(null);
   const [sourceFetching, setSourceFetching] = useState(false);
+  const restoredRef = useRef(false);
 
-  // No auto-fetch on mount — user must select a source and click Fetch News
+  // Restore from sessionStorage on mount
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+    try {
+      const saved = sessionStorage.getItem(DASHBOARD_STORAGE_KEY);
+      if (saved) {
+        const state = JSON.parse(saved);
+        if (state.sourceNews && Array.isArray(state.sourceNews) && state.sourceNews.length > 0) {
+          setSourceNews(state.sourceNews);
+          setSelectedSource(state.selectedSource || "economic-times");
+        }
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // Persist to sessionStorage whenever sourceNews changes
+  useEffect(() => {
+    if (sourceNews && sourceNews.length > 0) {
+      sessionStorage.setItem(DASHBOARD_STORAGE_KEY, JSON.stringify({
+        sourceNews,
+        selectedSource,
+      }));
+    }
+  }, [sourceNews, selectedSource]);
 
   const handleFetchBySource = async () => {
     const source = NEWS_SOURCES.find((s) => s.id === selectedSource);
@@ -387,44 +414,37 @@ export default function Dashboard() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
         >
-          <h2 className="font-serif text-2xl sm:text-3xl font-bold mb-2">
-            <span className="gold-gradient-text">Video Lectures</span>
-          </h2>
-          <p className="text-muted-foreground mb-8">Curated video content for comprehensive preparation</p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {videoFeeds.map((video, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.08, duration: 0.4 }}
-              className="glass-card-hover group cursor-pointer overflow-hidden"
-            >
-              <div className="relative aspect-video bg-secondary flex items-center justify-center">
-                <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
-                  <Play className="w-6 h-6 text-primary ml-0.5" />
+          <div className="flex items-center gap-3 mb-8">
+            <Play className="w-5 h-5 text-primary" />
+            <h2 className="font-serif text-2xl font-bold gold-gradient-text">Recommended Lectures</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {videoFeeds.map((video, index) => (
+              <motion.div
+                key={video.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 + index * 0.1 }}
+                className="glass-card-hover p-5"
+              >
+                <div className="aspect-video rounded-lg bg-gradient-to-br from-secondary to-secondary/50 mb-4 flex items-center justify-center">
+                  <Play className="w-10 h-10 text-primary/60" />
                 </div>
-                <span className="absolute bottom-2 right-2 bg-background/80 text-xs px-2 py-0.5 rounded text-foreground">
-                  {video.duration}
-                </span>
-              </div>
-              <div className="p-4">
-                <h3 className="font-medium text-sm text-foreground mb-1 line-clamp-2">{video.title}</h3>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <h3 className="font-semibold text-foreground text-sm mb-1">{video.title}</h3>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span>{video.channel}</span>
+                  <span>•</span>
+                  <span>{video.duration}</span>
+                  <span>•</span>
                   <span>{video.views} views</span>
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
       </section>
     </div>
   );

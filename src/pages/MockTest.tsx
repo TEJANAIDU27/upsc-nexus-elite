@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, ChevronRight, CheckCircle2, XCircle, RotateCcw } from "lucide-react";
+import { Clock, ChevronRight, CheckCircle2, XCircle, RotateCcw, RefreshCw } from "lucide-react";
 import { ShimmerQuestion } from "@/components/ShimmerLoaders";
 import { ENDPOINTS, type MockQuestion } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+
+const MOCK_STORAGE_KEY = "nexus_mock_test_state";
 
 export default function MockTest() {
   const { user } = useAuth();
@@ -19,8 +21,33 @@ export default function MockTest() {
   const [error, setError] = useState<string | null>(null);
   const savedRef = useRef(false);
 
-  // Normalize options: webhook may return { a: "...", b: "...", c: "...", d: "..." }
-  // or an array of strings — we convert both into a string[]
+  // Restore from sessionStorage on mount
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(MOCK_STORAGE_KEY);
+      if (saved) {
+        const state = JSON.parse(saved);
+        if (state.questions?.length > 0) {
+          setQuestions(state.questions);
+          setAnswers(state.answers || {});
+          setCurrentQ(state.currentQ ?? 0);
+          setTimeLeft(state.timeLeft ?? 20 * 60);
+          setSubmitted(state.submitted ?? false);
+          setStarted(true);
+          savedRef.current = state.submitted ?? false;
+        }
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // Persist to sessionStorage
+  useEffect(() => {
+    if (!started || questions.length === 0) return;
+    sessionStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify({
+      questions, answers, currentQ, timeLeft, submitted,
+    }));
+  }, [questions, answers, currentQ, timeLeft, submitted, started]);
+
   const normalizeOptions = (options: unknown): string[] => {
     if (Array.isArray(options)) return options.map(String);
     if (options && typeof options === "object") {
@@ -35,6 +62,7 @@ export default function MockTest() {
     setLoading(true);
     setError(null);
     savedRef.current = false;
+    sessionStorage.removeItem(MOCK_STORAGE_KEY);
     fetch(ENDPOINTS.MOCK_TEST, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -182,9 +210,23 @@ export default function MockTest() {
           <p className="text-muted-foreground mb-6">
             {score >= 15 ? "Excellent!" : score >= 10 ? "Good effort!" : "Keep practicing!"}
           </p>
-          <button onClick={fetchQuestions} className="gold-glow-button inline-flex items-center gap-2">
-            <RotateCcw className="w-4 h-4" /> Retake Test
-          </button>
+          <div className="flex flex-wrap justify-center gap-3">
+            <button onClick={fetchQuestions} className="gold-glow-button inline-flex items-center gap-2">
+              <RotateCcw className="w-4 h-4" /> Generate New Test
+            </button>
+            <button
+              onClick={() => {
+                sessionStorage.removeItem(MOCK_STORAGE_KEY);
+                setQuestions([]);
+                setStarted(false);
+                setSubmitted(false);
+                setAnswers({});
+              }}
+              className="inline-flex items-center gap-2 text-sm py-2.5 px-5 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
+            >
+              <RefreshCw className="w-4 h-4" /> Clear & Reset
+            </button>
+          </div>
         </motion.div>
 
         <div className="space-y-4">
