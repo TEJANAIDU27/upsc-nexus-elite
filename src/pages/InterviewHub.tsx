@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, Mic, MicOff, Send, User, MessageSquare, FileText, Loader2, ArrowRight, MessageCircle } from "lucide-react";
+import { Upload, Mic, MicOff, Send, User, MessageSquare, FileText, Loader2, ArrowRight, MessageCircle, RefreshCw } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 const INTERVIEW_WEBHOOK = "https://n8n.srv1495892.hstgr.cloud/webhook/interview";
+const INTERVIEW_STORAGE_KEY = "nexus_interview_state";
 
 interface InterviewQuestion {
   question: string;
@@ -18,11 +19,9 @@ interface ChatMessage {
   text: string;
 }
 
-// Simple markdown renderer for bold and bullet points
 function renderMarkdown(text: string) {
   const lines = text.split("\n");
   return lines.map((line, i) => {
-    // Bold: **text**
     const parts = line.split(/(\*\*[^*]+\*\*)/g);
     const rendered = parts.map((part, j) => {
       if (part.startsWith("**") && part.endsWith("**")) {
@@ -30,15 +29,9 @@ function renderMarkdown(text: string) {
       }
       return part;
     });
-
-    // Bullet points
     const trimmed = line.trimStart();
     if (trimmed.startsWith("- ") || trimmed.startsWith("* ") || /^\d+\.\s/.test(trimmed)) {
-      return (
-        <li key={i} className="ml-4 list-disc">
-          {rendered}
-        </li>
-      );
+      return <li key={i} className="ml-4 list-disc">{rendered}</li>;
     }
     if (line.trim() === "") return <br key={i} />;
     return <p key={i}>{rendered}</p>;
@@ -57,15 +50,56 @@ export default function InterviewHub() {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [sendingAnswer, setSendingAnswer] = useState(false);
-  const [awaitingAction, setAwaitingAction] = useState(false); // true after mentor feedback
+  const [awaitingAction, setAwaitingAction] = useState(false);
   const recognitionRef = useRef<any>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const restoredRef = useRef(false);
+
+  // Restore from sessionStorage
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+    try {
+      const saved = sessionStorage.getItem(INTERVIEW_STORAGE_KEY);
+      if (saved) {
+        const state = JSON.parse(saved);
+        if (state.questions?.length > 0) {
+          setQuestions(state.questions);
+        }
+        if (state.chatMessages?.length > 0) {
+          setChatMessages(state.chatMessages);
+          setChatActive(state.chatActive ?? false);
+          setCurrentQIdx(state.currentQIdx ?? 0);
+          setAwaitingAction(state.awaitingAction ?? false);
+        }
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // Persist to sessionStorage
+  useEffect(() => {
+    if (questions.length === 0 && chatMessages.length === 0) return;
+    sessionStorage.setItem(INTERVIEW_STORAGE_KEY, JSON.stringify({
+      questions, chatMessages, chatActive, currentQIdx, awaitingAction,
+    }));
+  }, [questions, chatMessages, chatActive, currentQIdx, awaitingAction]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
 
-  // DAF upload & question fetch
+  const handleResetInterview = () => {
+    sessionStorage.removeItem(INTERVIEW_STORAGE_KEY);
+    setQuestions([]);
+    setChatMessages([]);
+    setChatActive(false);
+    setCurrentQIdx(0);
+    setAwaitingAction(false);
+    setTranscript("");
+    setDafFile(null);
+    toast.success("Interview session reset");
+  };
+
   const handleDAFUpload = async () => {
     if (!dafFile) {
       toast.error("Please select your DAF file first");
@@ -128,7 +162,6 @@ export default function InterviewHub() {
     setIsRecording(true);
   }, [isRecording]);
 
-  // Submit answer — handles both "feedback" continuation and regular answers
   const submitAnswer = async () => {
     const answer = transcript.trim();
     if (!answer) { toast.error("Please record or type your answer"); return; }
@@ -155,7 +188,7 @@ export default function InterviewHub() {
       const feedback = data.output || data.mentor_feedback || data.feedback || data.message || "Observation recorded.";
 
       setChatMessages((prev) => [...prev, { role: "mentor", text: feedback }]);
-      setAwaitingAction(true); // Show action buttons, keep input enabled
+      setAwaitingAction(true);
     } catch {
       setChatMessages((prev) => [
         ...prev,
@@ -168,7 +201,6 @@ export default function InterviewHub() {
   };
 
   const handleContinueDiscussion = () => {
-    // Keep same question index, user can type follow-up — mode stays "feedback"
     setAwaitingAction(false);
     toast.info("Continue the discussion. Your follow-up will be sent on the same topic.");
   };
@@ -196,7 +228,6 @@ export default function InterviewHub() {
         const nextIdx = currentQIdx + 1;
         setQuestions((prev) => [...prev, newQ!]);
         setCurrentQIdx(nextIdx);
-        // Remove the loading message and add the real question
         setChatMessages((prev) => [
           ...prev.slice(0, -1),
           { role: "board", text: newQ!.question },
@@ -238,6 +269,18 @@ export default function InterviewHub() {
       </section>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 space-y-10">
+        {/* Reset Button */}
+        {(questions.length > 0 || chatMessages.length > 0) && (
+          <div className="flex justify-end">
+            <button
+              onClick={handleResetInterview}
+              className="inline-flex items-center gap-2 text-xs py-2 px-4 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
+            >
+              <RefreshCw className="w-3.5 h-3.5" /> Reset Interview Session
+            </button>
+          </div>
+        )}
+
         {/* DAF Upload */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="glass-card p-6 sm:p-8">
           <h2 className="font-serif text-xl font-bold gold-gradient-text mb-4 flex items-center gap-2">
@@ -282,10 +325,12 @@ export default function InterviewHub() {
                   </AccordionItem>
                 ))}
               </Accordion>
-              <button onClick={startMock} className="gold-glow-button mt-6 text-sm py-2.5 px-6 inline-flex items-center gap-2">
-                <Mic className="w-4 h-4" />
-                Start Live Mock
-              </button>
+              {!chatActive && (
+                <button onClick={startMock} className="gold-glow-button mt-6 text-sm py-2.5 px-6 inline-flex items-center gap-2">
+                  <Mic className="w-4 h-4" />
+                  Start Live Mock
+                </button>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -351,7 +396,7 @@ export default function InterviewHub() {
                 <div ref={chatEndRef} />
               </div>
 
-              {/* Input area — always enabled unless interview ended */}
+              {/* Input area */}
               {!interviewEnded && (
                 <div className="border-t border-border pt-4">
                   <div className="flex items-start gap-3">
@@ -379,18 +424,12 @@ export default function InterviewHub() {
                       <button
                         onClick={submitAnswer}
                         disabled={sendingAnswer || !transcript.trim()}
-                        className="w-11 h-11 rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-40"
+                        className="w-11 h-11 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40 transition-all hover:bg-primary/90"
                       >
                         {sendingAnswer ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                       </button>
                     </div>
                   </div>
-                  {isRecording && (
-                    <p className="text-xs text-destructive mt-2 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
-                      Recording... The Board is listening.
-                    </p>
-                  )}
                 </div>
               )}
             </motion.div>

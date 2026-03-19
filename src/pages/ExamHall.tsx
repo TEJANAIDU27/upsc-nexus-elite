@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, ChevronRight, ChevronLeft, RotateCcw, Flag, BookOpen, Download, Loader2 } from "lucide-react";
+import { Clock, ChevronRight, ChevronLeft, RotateCcw, Flag, BookOpen, Download, Loader2, Timer } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
@@ -29,7 +29,7 @@ interface SimQuestion {
 type QStatus = "unvisited" | "answered" | "review";
 
 const STORAGE_KEY = "nexus_prelims_state";
-const TOTAL_TIME = 120 * 60; // 120 minutes
+const TOTAL_TIME = 120 * 60;
 
 function normalizeOptions(options: unknown): string[] {
   if (Array.isArray(options)) return options.map(String);
@@ -52,7 +52,9 @@ export default function ExamHall() {
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadingElapsed, setLoadingElapsed] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Restore from localStorage
   useEffect(() => {
@@ -97,6 +99,20 @@ export default function ExamHall() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [started, submitted]);
 
+  // Loading elapsed timer
+  useEffect(() => {
+    if (loading) {
+      setLoadingElapsed(0);
+      loadingTimerRef.current = setInterval(() => {
+        setLoadingElapsed((t) => t + 1);
+      }, 1000);
+    } else {
+      if (loadingTimerRef.current) clearInterval(loadingTimerRef.current);
+      setLoadingElapsed(0);
+    }
+    return () => { if (loadingTimerRef.current) clearInterval(loadingTimerRef.current); };
+  }, [loading]);
+
   const fetchQuestions = useCallback(() => {
     setLoading(true);
     setError(null);
@@ -107,24 +123,52 @@ export default function ExamHall() {
     })
       .then((res) => res.text())
       .then((text) => {
-        console.log("[ExamHall] Raw response:", text.substring(0, 500));
+        console.log("[ExamHall] Raw response length:", text.length);
+        console.log("[ExamHall] Raw response preview:", text.substring(0, 500));
+
         let data: unknown;
-        try { data = JSON.parse(text); } catch { throw new Error("Invalid JSON from webhook"); }
+        try {
+          data = JSON.parse(text);
+        } catch {
+          // Try if it's double-stringified
+          try {
+            data = JSON.parse(JSON.parse(text));
+          } catch {
+            throw new Error("Invalid JSON from webhook");
+          }
+        }
+
+        console.log("[ExamHall] Parsed data type:", typeof data, Array.isArray(data) ? `array[${(data as any[]).length}]` : "");
 
         // Extract array from various wrapper formats
         let raw: RawQuestion[];
         if (Array.isArray(data)) {
           // Could be [[...]] (n8n double-wrap) or [{...}, ...]
-          raw = Array.isArray(data[0]) ? data[0] : data;
+          if (data.length > 0 && Array.isArray(data[0])) {
+            raw = data[0];
+          } else if (data.length > 0 && typeof data[0] === "object" && data[0] !== null && ("question_text" in data[0] || "question" in data[0])) {
+            raw = data;
+          } else if (data.length === 1 && typeof data[0] === "object" && data[0] !== null) {
+            // n8n sometimes wraps in [{output: [...]}]
+            const inner = data[0] as Record<string, unknown>;
+            const arr = inner.questions || inner.output || inner.data || inner.items;
+            raw = Array.isArray(arr) ? arr : data;
+          } else {
+            raw = data;
+          }
         } else if (data && typeof data === "object") {
           const d = data as Record<string, unknown>;
-          raw = (d.questions || d.output || d.data || d.items || []) as RawQuestion[];
-          if (!Array.isArray(raw)) raw = [];
+          const arr = d.questions || d.output || d.data || d.items;
+          raw = Array.isArray(arr) ? arr : [];
         } else {
           raw = [];
         }
 
-        console.log("[ExamHall] Parsed questions count:", raw.length);
+        console.log("[ExamHall] Extracted questions count:", raw.length);
+        if (raw.length > 0) {
+          console.log("[ExamHall] First question sample:", JSON.stringify(raw[0]).substring(0, 300));
+        }
+
         if (raw.length === 0) throw new Error("No questions found in response");
 
         const q: SimQuestion[] = raw.map((item) => ({
@@ -134,6 +178,7 @@ export default function ExamHall() {
           detailedExplanation: (item.explanation || item.detailedExplanation || "").replace(/\\n/g, "\n"),
           subjectCategory: item.subject_category || "",
         }));
+
         setQuestions(q);
         setStarted(true);
         setCurrentQ(0);
@@ -141,8 +186,12 @@ export default function ExamHall() {
         setReviewFlags(new Set());
         setSubmitted(false);
         setTimeLeft(TOTAL_TIME);
+        toast.success(`Loaded ${q.length} questions. Good luck!`);
       })
-      .catch((err) => setError(err.message))
+      .catch((err) => {
+        console.error("[ExamHall] Fetch error:", err);
+        setError(err.message);
+      })
       .finally(() => setLoading(false));
   }, [user]);
 
@@ -173,7 +222,6 @@ export default function ExamHall() {
     return "unvisited";
   };
 
-  // Scoring: +2 correct, -0.66 wrong, 0 unanswered
   const calcScore = () => {
     let correct = 0, wrong = 0, unanswered = 0;
     questions.forEach((q, i) => {
@@ -195,7 +243,6 @@ export default function ExamHall() {
     const { correct, wrong, unanswered, totalMarks, accuracy } = calcScore();
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-    // Header
     doc.setFontSize(22);
     doc.setTextColor(212, 175, 55);
     doc.text("UPSC Nexus - Prelims Simulator Report", 105, 20, { align: "center" });
@@ -214,7 +261,6 @@ export default function ExamHall() {
     doc.setDrawColor(212, 175, 55);
     doc.line(14, 76, 196, 76);
 
-    // Table
     const tableData = questions.map((q, i) => [
       `Q${i + 1}`,
       q.question.length > 80 ? q.question.substring(0, 77) + "..." : q.question,
@@ -240,7 +286,6 @@ export default function ExamHall() {
       margin: { left: 14, right: 14 },
     });
 
-    // Detailed explanations on new pages
     doc.addPage();
     doc.setFontSize(16);
     doc.setTextColor(212, 175, 55);
@@ -310,8 +355,17 @@ export default function ExamHall() {
     );
   }
 
-  // ═══════ LOADING ═══════
+  // ═══════ LOADING WITH TIMER ═══════
   if (loading) {
+    const loadingMessages = [
+      "Connecting to question bank…",
+      "Generating your exam paper…",
+      "Curating questions from database…",
+      "Almost there, finalizing paper…",
+      "Processing response from server…",
+    ];
+    const msgIndex = Math.min(Math.floor(loadingElapsed / 8), loadingMessages.length - 1);
+
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4">
         <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[hsl(var(--gold-light))] via-[hsl(var(--gold))] to-[hsl(var(--gold-dark))] flex items-center justify-center animate-pulse">
@@ -319,8 +373,20 @@ export default function ExamHall() {
         </div>
         <div className="text-center">
           <h2 className="font-serif text-2xl font-bold gold-gradient-text mb-2">UPSC Nexus</h2>
-          <p className="text-muted-foreground">Generating your exam paper…</p>
-          <Loader2 className="w-6 h-6 text-primary animate-spin mx-auto mt-4" />
+          <motion.p
+            key={msgIndex}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-muted-foreground mb-4"
+          >
+            {loadingMessages[msgIndex]}
+          </motion.p>
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-4">
+            <Timer className="w-4 h-4 text-primary" />
+            <span className="font-mono">{loadingElapsed}s</span>
+          </div>
+          <Loader2 className="w-6 h-6 text-primary animate-spin mx-auto" />
+          <p className="text-xs text-muted-foreground/60 mt-4">This may take 30-60 seconds</p>
         </div>
       </div>
     );
@@ -399,7 +465,14 @@ export default function ExamHall() {
                   }`}>
                     {i + 1}
                   </span>
-                  <p className="text-sm text-foreground font-medium font-serif">{q.question}</p>
+                  <div className="flex-1">
+                    {q.subjectCategory && (
+                      <span className="inline-block px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold mb-1">
+                        {q.subjectCategory}
+                      </span>
+                    )}
+                    <p className="text-sm text-foreground font-medium font-serif whitespace-pre-line">{q.question}</p>
+                  </div>
                 </div>
                 <div className="pl-9 text-xs text-muted-foreground space-y-1">
                   {!isUnanswered && !isCorrect && (
@@ -407,7 +480,7 @@ export default function ExamHall() {
                   )}
                   <p>Correct: <span className="text-[hsl(var(--success))]">{q.correctAnswer}</span></p>
                   {q.detailedExplanation && (
-                    <p className="mt-1 text-muted-foreground/80">{q.detailedExplanation}</p>
+                    <p className="mt-1 text-muted-foreground/80 whitespace-pre-line">{q.detailedExplanation}</p>
                   )}
                 </div>
               </motion.div>
